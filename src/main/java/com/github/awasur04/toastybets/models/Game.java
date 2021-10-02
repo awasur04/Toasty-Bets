@@ -5,12 +5,12 @@ import java.time.ZonedDateTime;
 public class Game {
     private Team[] teams;
     private ZonedDateTime gameTime;
+    private boolean gameCompleted;
 
-    public Game(int id1, int id2, int payout1, int payout2, ZonedDateTime gameTime) {
-        Team team1 = new Team(id1, payout1, 0);
-        Team team2 = new Team(id2, payout2, 0);
+    public Game(Team team1, Team team2, ZonedDateTime gameTime) {
         this.teams = new Team[] {team1, team2};
         this.gameTime = gameTime;
+        this.gameCompleted = false;
     }
 
     public Team[] getTeams() {
@@ -27,6 +27,19 @@ public class Game {
 
     public void setGameTime(ZonedDateTime gameTime) {
         this.gameTime = gameTime;
+    }
+
+    public Team getWinner() {
+        if (gameCompleted) {
+            if (teams[0].getScore() > teams[1].getScore()) {
+                return teams[0];
+            } else if (teams[0].getScore() < teams[1].getScore()){
+                return teams[1];
+            } else {
+                return null;
+            }
+        }
+        return null;
     }
 }
 
