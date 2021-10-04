@@ -3,29 +3,35 @@ package com.github.awasur04.toastybets.models;
 public class Team {
     private int id;
     private String name;
-    private int payout;
+    private String abbreviation;
+    private float payout;
     private int score;
 
-    public Team(int id, int payout, String name) {
+    public Team(int id, int payout, String name, String abbreviation) {
         this.id = id;
         this.name = name;
         this.payout = payout;
         this.score = 0;
+        this.abbreviation = abbreviation;
     }
-    public Team(int id, String name) {
-        this(id,0,name);
+    public Team(int id, String name, String abbreviation) {
+        this(id,0,name, abbreviation);
     }
 
     public int getId() {
         return id;
     }
 
-    public int getPayout() {
+    public float getPayout() {
         return payout;
     }
 
     public int getScore() {
         return score;
+    }
+
+    public String getAbbreviation() {
+        return abbreviation;
     }
 
     public void setId(int id) {
