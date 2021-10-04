@@ -51,19 +51,58 @@ public class GameManager {
             put(33, new Team(33, "Baltimore Ravens", "BAL"));
             put(34, new Team(34, "Houston Texans", "HOU"));
         }};
-        this.currentWeekGames = new ArrayList<>();
-        this.scheduleService = new ScheduleService(this);
-        scheduleService.updateSchedule();
+        this.currentWeekGames = new HashMap<>();
+        this.update = new UpdateGames(this);
+        this.eventsManager = new ScheduledEventsManager();
+        update.updateSchedule();
+        scheduleEvents();
     }
 
-    public void addGame(int team1Id, int team2Id, ZonedDateTime gameTime) {
+
+    ///update schedule, update score, update odds
+    private void scheduleEvents() {
+        eventsManager.addEvent(this::updateSchedule, ScheduledEventsManager.UpdateFrequency.WEEKLY); //Update our schedule weekly
+        eventsManager.addEvent(update::updateScore, ScheduledEventsManager.UpdateFrequency.NFLGAMEDAY); //Update score on sunday
+        eventsManager.addEvent(update::updateScore, ScheduledEventsManager.UpdateFrequency.THURSDAYNIGHT); //Update score on thursday games
+        eventsManager.addEvent(update::updateScore, ScheduledEventsManager.UpdateFrequency.MONDAYNIGHT); //Update score on monday night
+    }
+    public void closeProgram() {
+        eventsManager.shutdownExecutor();
+    }
+
+    public void addGame(long gameId, int team1Id, int team2Id, ZonedDateTime gameTime) {
         try {
             Team team1  = teamList.get(team1Id);
             Team team2 = teamList.get(team2Id);
-            currentWeekGames.add(new Game(team1, team2, gameTime));
+            currentWeekGames.put(gameId, new Game(team1, team2, gameTime));
         } catch (Exception e) {
             System.out.println("Error adding game");
             System.out.println(e.getMessage());
+        }
+    }
+
+    public void updateSchedule() {
+        this.currentWeekGames.clear();
+        eventsManager.resetExecutor();
+        update.updateSchedule();
+        scheduleEvents();
+    }
+
+    public HashMap<Long, Game> getCurrentWeekGames() {
+        return currentWeekGames;
+    }
+
+    public void updateScores(long matchId, int team1score, int team2score) {
+        Game currentGame = currentWeekGames.get(matchId);
+        currentGame.getTeams().get(0).setScore(team1score);
+        currentGame.getTeams().get(1).setScore(team2score);
+    }
+
+    public void printGames() {
+        for (Game game : currentWeekGames.values()) {
+            System.out.println("\n--------------------------");
+            System.out.println(game);
+            System.out.println("--------------------------");
         }
     }
 }
