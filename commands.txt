@@ -1,3 +1,0 @@
-sudo cp /data/setups/jdk-16.0.2_linux-aarch64_bin.tar.gz jdk-16.0.2_linux-aarch64_bin.targz
-
-sudo tar -xzvf jdk-16.0.2_linux-aarch64_bin.tar.gz
