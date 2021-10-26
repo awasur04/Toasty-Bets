@@ -31,6 +31,49 @@ public class DatabaseManager {
         }
     }
 
+    public User getUser(String discordId) {
+        LogManager.log("DB: Retrieving user results for: " + discordId);
+        if (!discordId.isBlank()) {
+            String sqlStatement = "SELECT * FROM users WHERE DiscordId =" + "'" + discordId + "'";
+            Connection conn = null;
+            Statement stmt = null;
+            try {
+                User tempUser = null;
+                Class.forName(dbDriver);
+                conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+                stmt = conn.createStatement();
+                ResultSet results = stmt.executeQuery(sqlStatement);
+                while(results.next()) {
+                    tempUser = new User(Long.parseLong(results.getString("DiscordId")), results.getString("DiscordName"), results.getInt("Balance"));
+                }
+                conn.close();
+                stmt.close();
+                return tempUser;
+            } catch (SQLException se) {
+                LogManager.error("SQL ERROR: ", se.getMessage());
+            } catch (Exception e) {
+                LogManager.error("Error retrieving user data\n", e.getMessage());
+            } finally {
+                try {
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (Exception e) {
+                    LogManager.error("DB: failed to close dbConnection", e.getMessage());
+                } finally {
+                    try {
+                        if (stmt != null) {
+                            stmt.close();
+                        }
+                    } catch (Exception e) {
+                        LogManager.error("DB: failed to close dbStatement", e.getMessage());
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public boolean createUser(String discordId, String discordName) {
 
         LogManager.log("DB: Creating user: " + discordId);
