@@ -1,6 +1,7 @@
 package com.github.awasur04.toastybets.services;
 
 import com.github.awasur04.toastybets.managers.GameManager;
+import com.github.awasur04.toastybets.managers.LogManager;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -14,7 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.Scanner;
 
 public class UpdateGames {
-    private String scheduleURL = "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+    private final String scheduleURL = "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
     private GameManager gm;
 
     public UpdateGames(GameManager gm) {
@@ -23,6 +24,7 @@ public class UpdateGames {
 
     public void updateSchedule() {
         try {
+            LogManager.log("Updating Weekly Schedule");
             JSONParser parser = new JSONParser();
             JSONObject dataObject = (JSONObject) parser.parse(retrieveJson(scheduleURL));
 
@@ -41,12 +43,13 @@ public class UpdateGames {
                 gm.addGame(matchId, Integer.valueOf(team1.get("id").toString()), Integer.valueOf(team2.get("id").toString()), ZonedDateTime.of(gameDate, gameTime, ZoneId.of("UTC+0")));
             }
         }catch (Exception e) {
-            System.out.println(e.getMessage());
+            LogManager.error("",e.getMessage());
         }
     }
 
     public void updateScore() {
         try {
+
             JSONParser parser = new JSONParser();
             JSONObject dataObject = (JSONObject) parser.parse(retrieveJson(scheduleURL));
 
