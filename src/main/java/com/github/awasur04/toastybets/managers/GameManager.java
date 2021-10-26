@@ -1,22 +1,24 @@
 package com.github.awasur04.toastybets.managers;
 
+import com.github.awasur04.toastybets.database.DatabaseManager;
+import com.github.awasur04.toastybets.discord.DiscordManager;
 import com.github.awasur04.toastybets.models.Game;
 import com.github.awasur04.toastybets.models.Team;
 import com.github.awasur04.toastybets.services.UpdateGames;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class GameManager {
     private Map<Integer, Team> teamList;
+    private DatabaseManager databaseManager;
     private HashMap<Long, Game> currentWeekGames;
     private UpdateGames update;
     private ScheduledEventsManager eventsManager;
+    private DiscordManager discordManager;
 
-
-    public GameManager() {
+    public GameManager(String token) {
         this.teamList = new HashMap<>() {{
             put(1, new Team(1,"Atlanta Falcons", "ATL"));
             put(2, new Team(2, "Buffalo Bills", "BUF"));
@@ -54,8 +56,11 @@ public class GameManager {
         this.currentWeekGames = new HashMap<>();
         this.update = new UpdateGames(this);
         this.eventsManager = new ScheduledEventsManager();
-        update.updateSchedule();
-        scheduleEvents();
+        this.databaseManager = new DatabaseManager();
+        this.discordManager = new DiscordManager(token, databaseManager);
+        LogManager.log("Program starting");
+        //update.updateSchedule();
+        //scheduleEvents();
     }
 
 
@@ -67,7 +72,9 @@ public class GameManager {
         eventsManager.addEvent(update::updateScore, ScheduledEventsManager.UpdateFrequency.MONDAYNIGHT); //Update score on monday night
     }
     public void closeProgram() {
+        LogManager.log("Program shutting down");
         eventsManager.shutdownExecutor();
+        LogManager.closeLogs();
     }
 
     public void addGame(long gameId, int team1Id, int team2Id, ZonedDateTime gameTime) {
@@ -104,5 +111,9 @@ public class GameManager {
             System.out.println(game);
             System.out.println("--------------------------");
         }
+    }
+
+    public DatabaseManager getDB() {
+        return this.databaseManager;
     }
 }
