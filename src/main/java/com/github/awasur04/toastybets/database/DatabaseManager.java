@@ -31,4 +31,44 @@ public class DatabaseManager {
         }
     }
 
+    public boolean createUser(String discordId, String discordName) {
+
+        LogManager.log("DB: Creating user: " + discordId);
+        if (!discordId.isBlank() && !discordName.isBlank()) {
+            String sqlStatement = "INSERT INTO users (DiscordId, DiscordName, Balance) VALUE ('" + discordId + "','" + discordName + "','" + startingTokenAmount + "')";
+            Connection conn = null;
+            Statement stmt = null;
+            try {
+                Class.forName(dbDriver);
+                conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+                stmt = conn.createStatement();
+                stmt.execute(sqlStatement);
+                conn.close();
+                stmt.close();
+                return true;
+            } catch (SQLException se) {
+                LogManager.error("SQL ERROR: ", se.getMessage());
+            } catch (Exception e) {
+                LogManager.error("Error retrieving user data\n", e.getMessage());
+            } finally {
+                try {
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (Exception e) {
+                    LogManager.error("DB: failed to close dbConnection", e.getMessage());
+                } finally {
+                    try {
+                        if (stmt != null) {
+                            stmt.close();
+                        }
+                    } catch (Exception e) {
+                        LogManager.error("DB: failed to close dbStatement", e.getMessage());
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
 }
