@@ -1,28 +1,25 @@
 package com.github.awasur04.toastybets.managers;
 
-import reactor.util.annotation.NonNull;
 
+import javax.annotation.Nonnull;
 import java.time.*;
-import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.TemporalField;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class ScheduledEventsManager {
     private ScheduledExecutorService executorService;
     public static enum UpdateFrequency {
-        NFLGAMEDAY, WEEKLY, BIDAILY, MONDAYNIGHT, THURSDAYNIGHT
+        NFLGAMEDAY, WEEKLY, BIDAILY, MONDAYNIGHT, THURSDAYNIGHT, TEST
     }
 
     public ScheduledEventsManager() {
         executorService = Executors.newScheduledThreadPool(5);
     }
 
-    public void addEvent(@NonNull Runnable function, UpdateFrequency frequency) {
+    public void addEvent(@Nonnull Runnable function, UpdateFrequency frequency) {
         switch(frequency){
             case NFLGAMEDAY:
                 LocalDateTime sunday = LocalDateTime.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY)).plusHours(10);
@@ -47,6 +44,8 @@ public class ScheduledEventsManager {
                 long thursdayOffset = LocalDateTime.now().until(thursday, ChronoUnit.HOURS);
                 executorService.scheduleAtFixedRate(function, thursdayOffset, 1, TimeUnit.HOURS);
                 break;
+            case TEST:
+                executorService.scheduleAtFixedRate(function, 5, 10, TimeUnit.SECONDS);
         }
     }
 
