@@ -1,4 +1,6 @@
 target/
+logs/
+.idea/
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -11,6 +13,5 @@ buildNumber.properties
 BUILD.bat
 NFLID.txt
 .idea/workspace.xml
-*.txt
 *.properties
 NFLID.txt
