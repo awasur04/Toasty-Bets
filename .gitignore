@@ -12,3 +12,4 @@ BUILD.bat
 NFLID.txt
 .idea/workspace.xml
 *.txt
+*.properties
