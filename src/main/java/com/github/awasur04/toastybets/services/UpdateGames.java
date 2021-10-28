@@ -28,6 +28,10 @@ public class UpdateGames {
             JSONParser parser = new JSONParser();
             JSONObject dataObject = (JSONObject) parser.parse(retrieveJson(scheduleURL));
 
+
+            JSONObject week = (JSONObject)dataObject.get("week");
+            gm.updateWeek(Integer.valueOf(week.get("number").toString()));
+
             JSONArray events = (JSONArray) dataObject.get("events");
             for (Object game : events) {
                 JSONObject gameObject = (JSONObject) game;
