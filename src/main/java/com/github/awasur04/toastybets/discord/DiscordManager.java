@@ -82,6 +82,21 @@ public class DiscordManager {
         return true;
     }
 
+    public void displayHelp(String discordId) {
+        responseHandler.displayHelp(discordId);
+    }
+
+    public void printWeeklySchedule(String discordId) {
+        try {
+            User source = databaseManager.getUser(discordId);
+            responseHandler.sendWeeklySchedule(source, gameManager.getGameList(), gameManager.getCurrentWeek());
+        }catch (Exception e) {
+            LogManager.error("Error printing test schedule: " , e.getMessage());
+        }
+
+    }
+
+
     public ResponseHandler getResponseHandler() {
         return responseHandler;
     }
