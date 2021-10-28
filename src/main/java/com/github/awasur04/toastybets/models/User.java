@@ -1,22 +1,43 @@
 package com.github.awasur04.toastybets.models;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.TimeZone;
 
 public class User {
     private Long discordId;
     private String discordName;
     private ArrayList<Bet> currentBets;
     private int toastyCoins;
+    private Permission_Level permissionLevel;
+    private String timeZone;
 
-    public User(Long id, String name, int coins) {
+    static enum Permission_Level {
+        DEV,
+        ADMIN,
+        NORMAL
+    }
+
+    public User(Long id, String name, int coins, String permissionLevel, String inputTimezone) {
         this.discordId = id;
         this.discordName = name;
         this.toastyCoins = coins;
         this.currentBets = new ArrayList<>();
+        this.permissionLevel = Permission_Level.valueOf(permissionLevel);
+
+    public Permission_Level getPermissionLevel() {
+        return permissionLevel;
+    }
+
     }
 
     public int getToastyCoins() {
         return toastyCoins;
+    }
+
+    public void setPermissionLevel(Permission_Level permissionLevel) {
+        this.permissionLevel = permissionLevel;
     }
 
     public Long getDiscordId() {
