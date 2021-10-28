@@ -59,7 +59,20 @@ public class DiscordManager {
     }
 
     public boolean createUser(String discordId, String discordName) {
-        return databaseManager.createUser(discordId, discordName);
+        try {
+            User newUser = databaseManager.createUser(discordId, discordName);
+            responseHandler.newUserSetup(newUser);
+            if (newUser == null) {
+                throw new RuntimeException("New User returned null");
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public User getUser(String discordId) {
+        return databaseManager.getUser(discordId);
     }
 
     public boolean checkIfUserIsCreated(String discordId) {
