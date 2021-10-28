@@ -97,6 +97,18 @@ public class DiscordManager {
     }
 
 
+    public boolean updateTimeZone(User user, String userZone) {
+        try {
+            if (timeZoneUTC.get(userZone) == null) return false;
+            user.setTimeZone(timeZoneUTC.get(userZone));
+            databaseManager.updateUser(user);
+            return true;
+        }catch (Exception e) {
+            LogManager.error("DiscordManager: Failed updateTimeZone: ", e.getMessage());
+        }
+        return false;
+    }
+
     public ResponseHandler getResponseHandler() {
         return responseHandler;
     }
