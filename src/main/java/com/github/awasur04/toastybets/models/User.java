@@ -55,6 +55,14 @@ public class User {
     public String getDiscordName() {
         return discordName;
     }
+
+    public boolean hasEnoughCoins(int value) {
+        if (value <= this.toastyCoins) {
+            return true;
+        }
+        return false;
+    }
+
     public void addToastyCoins(int value) {
         if (value >= 0) {
             this.toastyCoins = this.toastyCoins + value;
@@ -93,6 +101,6 @@ public class User {
 
     @Override
     public String toString() {
-        return this.discordId + " + " + this.discordName + " + " + this.toastyCoins;
+        return this.discordId + " + " + this.discordName + " + " + this.toastyCoins + " + " + this.timeZone;
     }
 }
