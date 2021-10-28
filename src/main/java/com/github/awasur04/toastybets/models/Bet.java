@@ -5,12 +5,14 @@ public class Bet {
     private Game bettingGame;
     private Team bettingTeam;
     private int bettingAmount;
+    private float bettingRate;
 
-    public Bet(User user, int betAmount, Game betGame, Team betTeam) {
+    public Bet(User user, int betAmount, Game betGame, Team betTeam, float bettingRate) {
         this.bettingUser = user;
         this.bettingAmount = betAmount;
         this.bettingGame = betGame;
         this.bettingTeam = betTeam;
+        this.bettingTeam = bettingTeam;
     }
 
     public double getPayout() {
