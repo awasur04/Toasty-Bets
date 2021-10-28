@@ -44,7 +44,7 @@ public class DatabaseManager {
                 stmt = conn.createStatement();
                 ResultSet results = stmt.executeQuery(sqlStatement);
                 while(results.next()) {
-                    tempUser = new User(Long.parseLong(results.getString("DiscordId")), results.getString("DiscordName"), results.getInt("Balance"));
+                    tempUser = new User(Long.parseLong(results.getString("DiscordId")), results.getString("DiscordName"), results.getInt("Balance"), results.getString("Permission"), results.getString("TimeZone"));
                 }
                 conn.close();
                 stmt.close();
@@ -74,7 +74,7 @@ public class DatabaseManager {
         return null;
     }
 
-    public boolean createUser(String discordId, String discordName) {
+    public User createUser(String discordId, String discordName) {
 
         LogManager.log("DB: Creating user: " + discordId);
         if (!discordId.isBlank() && !discordName.isBlank()) {
@@ -88,11 +88,55 @@ public class DatabaseManager {
                 stmt.execute(sqlStatement);
                 conn.close();
                 stmt.close();
-                return true;
+                return new User(Long.parseLong(discordId), discordName, startingTokenAmount, "NORMAL", "UTC+0");
             } catch (SQLException se) {
                 LogManager.error("SQL ERROR: ", se.getMessage());
             } catch (Exception e) {
                 LogManager.error("Error retrieving user data\n", e.getMessage());
+            } finally {
+                try {
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (Exception e) {
+                    LogManager.error("DB: failed to close dbConnection", e.getMessage());
+                } finally {
+                    try {
+                        if (stmt != null) {
+                            stmt.close();
+                        }
+                    } catch (Exception e) {
+                        LogManager.error("DB: failed to close dbStatement", e.getMessage());
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean updateUser(User user) {
+        LogManager.log("DB: Updating user: " + user);
+        if (user != null) {
+            String sqlStatement = "UPDATE users SET " +
+                    "DiscordName = '" + user.getDiscordName() + "'," +
+                    "Balance = '" + user.getToastyCoins() + "'," +
+                    "Permission = '" + user.getPermissionLevel() + "'," +
+                    "TimeZone = '" + user.getTimeZone() + "'" +
+                    "WHERE DiscordId = '" + user.getDiscordId() + "'";
+            Connection conn = null;
+            Statement stmt = null;
+            try {
+                Class.forName(dbDriver);
+                conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+                stmt = conn.createStatement();
+                stmt.execute(sqlStatement);
+                conn.close();
+                stmt.close();
+                return true;
+            } catch (SQLException se) {
+                LogManager.error("SQL ERROR: ", se.getMessage());
+            } catch (Exception e) {
+                LogManager.error("Error updating user information\n", e.getMessage());
             } finally {
                 try {
                     if (conn != null) {
