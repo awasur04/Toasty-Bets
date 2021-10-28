@@ -7,8 +7,7 @@ import com.github.awasur04.toastybets.models.Team;
 import com.github.awasur04.toastybets.services.UpdateGames;
 
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class GameManager {
     private Map<Integer, Team> teamList;
@@ -17,6 +16,7 @@ public class GameManager {
     private UpdateGames update;
     private ScheduledEventsManager eventsManager;
     private DiscordManager discordManager;
+    private int currentWeek;
 
     public GameManager(String token) {
         this.teamList = new HashMap<>() {{
@@ -54,13 +54,17 @@ public class GameManager {
             put(34, new Team(34, "Houston Texans", "HOU"));
         }};
         this.currentWeekGames = new HashMap<>();
+
+
+
+
         this.update = new UpdateGames(this);
         this.eventsManager = new ScheduledEventsManager();
         this.databaseManager = new DatabaseManager();
-        this.discordManager = new DiscordManager(token, databaseManager);
+        this.discordManager = new DiscordManager(token, this);
         LogManager.log("Program starting");
-        //update.updateSchedule();
-        //scheduleEvents();
+        update.updateSchedule();
+        scheduleEvents();
     }
 
 
@@ -88,6 +92,10 @@ public class GameManager {
         }
     }
 
+    public void updateWeek(int currentWeek) {
+        this.currentWeek = currentWeek;
+    }
+
     public void updateSchedule() {
         this.currentWeekGames.clear();
         eventsManager.resetExecutor();
@@ -97,6 +105,18 @@ public class GameManager {
 
     public HashMap<Long, Game> getCurrentWeekGames() {
         return currentWeekGames;
+    }
+    public int getCurrentWeek() {
+        return currentWeek;
+    }
+
+    public ArrayList<Game> getGameList() {
+        ArrayList<Game> temp = new ArrayList<Game>();
+        for(Game currentGame : this.currentWeekGames.values()) {
+            temp.add(currentGame);
+        }
+        Collections.sort(temp);
+        return temp;
     }
 
     public void updateScores(long matchId, int team1score, int team2score) {
@@ -116,4 +136,5 @@ public class GameManager {
     public DatabaseManager getDB() {
         return this.databaseManager;
     }
+
 }
