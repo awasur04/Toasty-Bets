@@ -25,11 +25,19 @@ public class User {
         this.toastyCoins = coins;
         this.currentBets = new ArrayList<>();
         this.permissionLevel = Permission_Level.valueOf(permissionLevel);
+        this.timeZone = inputTimezone;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
 
     public Permission_Level getPermissionLevel() {
         return permissionLevel;
     }
 
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
     }
 
     public int getToastyCoins() {
