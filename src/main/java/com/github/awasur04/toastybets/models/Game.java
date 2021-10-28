@@ -1,11 +1,14 @@
 package com.github.awasur04.toastybets.models;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Game {
+public class Game implements Comparable {
     private Team team1;
     private Team team2;
     private ZonedDateTime gameTime;
@@ -44,8 +47,23 @@ public class Game {
     }
 
     public String toString() {
-        return team1.getName() + "(" + team1.getAbbreviation() + ") VS " + team2.getName() + "(" + team2.getAbbreviation() + ")" +
-                "\nDate: " + gameTime.withZoneSameInstant(ZoneId.of("UTC-5")).toLocalDateTime();
+        return team1.getName() + " (" + team1.getAbbreviation() + ") VS (" + team2.getAbbreviation() + ") " + team2.getName();
+    }
+
+    public boolean isGameCompleted() {
+        return gameCompleted;
+    }
+
+    @Override
+    public int compareTo(@NotNull Object o) {
+        Game game = (Game)o;
+        if (this.gameTime.isBefore(game.getGameTime())) {
+            return -1;
+        } else if (this.gameTime.isAfter(game.getGameTime())) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 }
 
