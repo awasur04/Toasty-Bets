@@ -1,20 +1,21 @@
 package com.github.awasur04.toastybets.discord;
 
 import com.github.awasur04.toastybets.database.DatabaseManager;
-import com.github.awasur04.toastybets.managers.GameManager;
-import com.github.awasur04.toastybets.managers.LogManager;
+import com.github.awasur04.toastybets.exceptions.LowBalanceException;
+import com.github.awasur04.toastybets.exceptions.TeamNotFoundException;
+import com.github.awasur04.toastybets.game.BetManager;
+import com.github.awasur04.toastybets.game.GameManager;
+import com.github.awasur04.toastybets.models.Bet;
+import com.github.awasur04.toastybets.models.Team;
+import com.github.awasur04.toastybets.utilities.LogManager;
 import com.github.awasur04.toastybets.models.User;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-import java.time.ZoneId;
 import java.util.HashMap;
-
-import static net.dv8tion.jda.api.utils.data.DataType.STRING;
 
 public class DiscordManager {
     private String token;
@@ -22,6 +23,7 @@ public class DiscordManager {
     private DatabaseManager databaseManager;
     private JDA toastyBot;
     private ResponseHandler responseHandler;
+    private BetManager betManager;
 
     private static HashMap<String, String> timeZoneUTC = new HashMap<>() {{
         put("EST", "UTC-4");
@@ -32,10 +34,11 @@ public class DiscordManager {
     }};
 
 
-    public DiscordManager(String token, GameManager gameManager) {
+    public DiscordManager(String token, GameManager gameManager, BetManager betManager) {
         this.token = token;
         this.gameManager = gameManager;
         this.databaseManager = gameManager.getDB();
+        this.betManager = betManager;
         initialize();
     }
 
@@ -52,6 +55,10 @@ public class DiscordManager {
             toastyBot.upsertCommand("join", "Join Toasty Bets Today!").queue();
             toastyBot.upsertCommand(new CommandData("register", "Register your account").
                     addOption(OptionType.STRING, "timezone", "time zone abbreviation", true)).queue();
+            toastyBot.upsertCommand("test", "used for testing purposes").queue();
+            toastyBot.upsertCommand(new CommandData("bet", "Place a bet")
+                    .addOption(OptionType.STRING, "team_abbreviation", "Abbreviation of the team you would like to bet on", true)
+                    .addOption(OptionType.INTEGER, "amount", "Amount you would to bet", true)).queue();
         }catch (Exception e) {
             LogManager.error("Failed to start discord services :", e.getMessage());
         }
@@ -97,11 +104,17 @@ public class DiscordManager {
     }
 
 
-    public boolean updateTimeZone(User user, String userZone) {
+    public boolean updateTimeZone(String discordId, String discordName, String userZone) {
         try {
+            User currentUser = databaseManager.getUser(discordId);
+            if (currentUser == null) {
+                createUser(discordId, discordName);
+            }
+
+
             if (timeZoneUTC.get(userZone) == null) return false;
-            user.setTimeZone(timeZoneUTC.get(userZone));
-            databaseManager.updateUser(user);
+            currentUser.setTimeZone(timeZoneUTC.get(userZone));
+            databaseManager.updateUser(currentUser);
             return true;
         }catch (Exception e) {
             LogManager.error("DiscordManager: Failed updateTimeZone: ", e.getMessage());
@@ -111,5 +124,30 @@ public class DiscordManager {
 
     public ResponseHandler getResponseHandler() {
         return responseHandler;
+    }
+
+    public void createNewBet(String userId, String teamAbbreviation, int betAmount) {
+        try {
+
+            //CHECK TIME ZONE SETTINGS DAYLIGHT SAVING
+
+            User targetUser = databaseManager.getUser(userId);
+            Team targetTeam = gameManager.getTeamByAbbreviation(teamAbbreviation);
+            if (targetUser != null) {
+                if (targetUser.getToastyCoins() >= betAmount) {
+
+                } else {
+                    throw new LowBalanceException("You only have " + targetUser.getToastyCoins() + " available Toasty Coins");
+                }
+            } else {
+                throw new NullPointerException("User cannot be found");
+            }
+        }catch(LowBalanceException lb) {
+
+        }catch(TeamNotFoundException te) {
+
+        }catch (Exception e) {
+            LogManager.error("Error creating new bet", e.getStackTrace().toString());
+        }
     }
 }

@@ -1,6 +1,6 @@
 package com.github.awasur04.toastybets.database;
 
-import com.github.awasur04.toastybets.managers.LogManager;
+import com.github.awasur04.toastybets.utilities.LogManager;
 import com.github.awasur04.toastybets.models.User;
 
 import java.io.IOException;

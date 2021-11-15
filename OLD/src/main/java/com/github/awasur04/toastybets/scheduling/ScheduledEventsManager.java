@@ -1,4 +1,4 @@
-package com.github.awasur04.toastybets.managers;
+package com.github.awasur04.toastybets.scheduling;
 
 
 import javax.annotation.Nonnull;

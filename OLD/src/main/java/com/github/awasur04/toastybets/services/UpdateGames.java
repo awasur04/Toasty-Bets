@@ -1,26 +1,42 @@
 package com.github.awasur04.toastybets.services;
 
-import com.github.awasur04.toastybets.managers.GameManager;
-import com.github.awasur04.toastybets.managers.LogManager;
+import com.github.awasur04.toastybets.game.GameManager;
+import com.github.awasur04.toastybets.utilities.LogManager;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class UpdateGames {
-    private final String scheduleURL = "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+    private String scheduleURL = "";
     private GameManager gm;
 
     public UpdateGames(GameManager gm) {
         this.gm = gm;
+        initialize();
     }
+
+    public void initialize() {
+        Properties properties = new Properties();
+        try {
+            properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties"));
+            this.scheduleURL = properties.getProperty("game.url");
+        }catch (IOException e) {
+            LogManager.error("Failed to locate properties file", e.getMessage());
+        }catch (Exception e) {
+            LogManager.error("Betting Manager failed to initialize", e.getMessage());
+        }
+    }
+
 
     public void updateSchedule() {
         try {
@@ -47,29 +63,36 @@ public class UpdateGames {
                 gm.addGame(matchId, Integer.valueOf(team1.get("id").toString()), Integer.valueOf(team2.get("id").toString()), ZonedDateTime.of(gameDate, gameTime, ZoneId.of("UTC+0")));
             }
         }catch (Exception e) {
-            LogManager.error("",e.getMessage());
+            LogManager.error("",e.getStackTrace().toString());
         }
     }
 
     public void updateScore() {
         try {
-
+            LogManager.log("Updating Scores");
             JSONParser parser = new JSONParser();
             JSONObject dataObject = (JSONObject) parser.parse(retrieveJson(scheduleURL));
 
             JSONArray events = (JSONArray) dataObject.get("events");
             for (Object game : events) {
                 JSONObject gameObject = (JSONObject) game;
+
+                //Retrieve team scores
                 JSONArray competitions = (JSONArray) gameObject.get("competitions");
                 JSONObject teamList = (JSONObject) competitions.get(0);
                 JSONArray competitors = (JSONArray) teamList.get("competitors");
                 JSONObject team1 = (JSONObject) competitors.get(0);
                 JSONObject team2 = (JSONObject) competitors.get(1);
                 long matchId = Long.parseLong(gameObject.get("id").toString());
-                gm.updateScores(matchId, Integer.valueOf(team1.get("score").toString()), Integer.valueOf(team2.get("score").toString()));
+
+                JSONObject statuses = (JSONObject)gameObject.get("status");
+                JSONObject statusType = (JSONObject)statuses.get("type");
+                boolean statusBoolean = Boolean.parseBoolean(statusType.get("completed").toString());
+
+                gm.updateScores(matchId, Integer.valueOf(team1.get("score").toString()), Integer.valueOf(team2.get("score").toString()), statusBoolean);
             }
         }catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println(e.getStackTrace().toString());
         }
     }
 
@@ -94,7 +117,7 @@ public class UpdateGames {
                 return currentLine;
             }
         }catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println(e.getStackTrace().toString());
         }
         return "";
     }

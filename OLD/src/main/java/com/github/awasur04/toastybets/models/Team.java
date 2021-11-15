@@ -4,13 +4,13 @@ public class Team {
     private int id;
     private String name;
     private String abbreviation;
-    private float payout;
+    private float odds;
     private int score;
 
-    public Team(int id, int payout, String name, String abbreviation) {
+    public Team(int id, int odds, String name, String abbreviation) {
         this.id = id;
         this.name = name;
-        this.payout = payout;
+        this.odds = odds;
         this.score = 0;
         this.abbreviation = abbreviation;
     }
@@ -22,8 +22,8 @@ public class Team {
         return id;
     }
 
-    public float getPayout() {
-        return payout;
+    public float getOdds() {
+        return odds;
     }
 
     public int getScore() {
@@ -38,8 +38,8 @@ public class Team {
         this.id = id;
     }
 
-    public void setPayout(int payout) {
-        this.payout = payout;
+    public void setOdds(float odds) {
+        this.odds = odds;
     }
 
     public void setScore(int score) {

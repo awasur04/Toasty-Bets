@@ -58,12 +58,13 @@ public class DateFormat {
             case 9,21 -> sb.append("9:");
             case 10,22 -> sb.append("10:");
             case 11,23 -> sb.append("11:");
-            case 12,24 -> sb.append("12");
+            case 12,24 -> sb.append("12:");
         }
 
 
         switch(eventTime.getMinute()) {
-            case 0,10,20,30,40,50,60 -> sb.append(eventTime.getMinute() + "0");
+            case 0 -> sb.append("00");
+            case 1,2,3,4,5,6,7,8,9 -> sb.append("0" + eventTime.getMinute());
             default -> sb.append(eventTime.getMinute());
         }
 

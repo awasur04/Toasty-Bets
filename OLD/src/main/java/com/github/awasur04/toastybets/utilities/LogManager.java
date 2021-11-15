@@ -1,4 +1,4 @@
-package com.github.awasur04.toastybets.managers;
+package com.github.awasur04.toastybets.utilities;
 
 import java.io.BufferedWriter;
 import java.io.File;

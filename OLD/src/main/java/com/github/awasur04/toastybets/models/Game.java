@@ -2,8 +2,7 @@ package com.github.awasur04.toastybets.models;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,12 +12,14 @@ public class Game implements Comparable {
     private Team team2;
     private ZonedDateTime gameTime;
     private boolean gameCompleted;
+    private boolean gameStarted;
 
     public Game(Team team1, Team team2, ZonedDateTime gameTime) {
         this.team1 = team1;
         this.team2 = team2;
         this.gameTime = gameTime;
         this.gameCompleted = false;
+        this.gameStarted = false;
     }
 
     public ArrayList<Team> getTeams() {
@@ -52,6 +53,10 @@ public class Game implements Comparable {
 
     public boolean isGameCompleted() {
         return gameCompleted;
+    }
+
+    public void setGameCompleted(boolean gameStatus) {
+        this.gameCompleted = gameStatus;
     }
 
     @Override

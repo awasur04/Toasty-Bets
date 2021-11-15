@@ -1,6 +1,7 @@
 package com.github.awasur04.toastybets.discord;
 
-import com.github.awasur04.toastybets.managers.LogManager;
+import com.github.awasur04.toastybets.models.Team;
+import com.github.awasur04.toastybets.utilities.LogManager;
 import com.github.awasur04.toastybets.models.Game;
 import com.github.awasur04.toastybets.models.User;
 import com.github.awasur04.toastybets.utilities.DateFormat;
@@ -9,12 +10,10 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.awt.*;
-import java.net.URL;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.TimeZone;
 
 public class ResponseHandler {
     private JDA toastyBot;
@@ -22,6 +21,7 @@ public class ResponseHandler {
     public static HashMap<String, String> emojiValues = new HashMap<String, String>() {{
         put("ARI", "<:ARI:902972769623490631>");
         put("ATL", "<:ATL:902972769803833384>");
+        put("BAL", "<:BAL:902972769917100062>");
         put("BUF", "<:BUF:902972769866776647>");
         put("CAR", "<:CAR:902972770428813322>");
         put("CHI", "<:CHI:902972770093256764>");
@@ -75,7 +75,7 @@ public class ResponseHandler {
                 }
             }
         }catch (Exception e) {
-            LogManager.error("Cannot send weekly schedule to user ID: " + user.getDiscordId(), e.getMessage());
+            LogManager.error("Cannot send weekly schedule to user ID: " + user.getDiscordId(), e.getStackTrace().toString());
         }
     }
 
@@ -103,10 +103,11 @@ public class ResponseHandler {
             eb.addField("","Once you place a bet at a certain rate that bet is locked in (NO CANCELING)", false);
             eb.addField("","Bets will be paid out at the end of each day a game is played", false);
             eb.addField("","You start with 1000 ToastyCoins, and will receive 200 ToastyCoins each week", false);
-            eb.setFooter("If you run into any issues or have any question message me @cool#5783");
+            eb.addField("", "Total Payout = Betting Odds * Bet Amount", false);
+            eb.setFooter("Comments, questions, or ideas please message me @cool#5783");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create help message", e.getMessage());
+            LogManager.error("Cannot create help message", e.getStackTrace().toString());
         }
         return null;
     }
@@ -125,7 +126,7 @@ public class ResponseHandler {
             eb.setFooter("Please register your time zone using the command /register <abbreviation>");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create weekly message", e.getMessage());
+            LogManager.error("Cannot create weekly message", e.getStackTrace().toString());
         }
         return null;
     }
@@ -137,16 +138,21 @@ public class ResponseHandler {
             eb.setColor(color);
             eb.setAuthor("NFL Week: " + weekNumber);
             for (Game currentGame : gameList) {
-                String team1Abrv = currentGame.getTeams().get(0).getAbbreviation();
-                String team2Abrv = currentGame.getTeams().get(1).getAbbreviation();
+                Team team1 = currentGame.getTeams().get(0);
+                Team team2 = currentGame.getTeams().get(1);
+                String title = emojiValues.get(team1.getAbbreviation()) + currentGame.toString() + emojiValues.get(team2.getAbbreviation());
                 String gameDate = DateFormat.formatDate(currentGame.getGameTime().withZoneSameInstant(ZoneId.of(userZoneId)).toLocalDateTime());
-                String title = emojiValues.get(team1Abrv) + currentGame.toString() + emojiValues.get(team2Abrv);
-                eb.addField(title, "Date: " + gameDate + "\nOdds: VS Odds: ", false);
+                if (currentGame.isGameCompleted()) {
+                    String gameScore = team1.getScore() + " - " + team2.getScore();
+                    eb.addField(title, "Date: " + gameDate + "\nFinal Score: " + gameScore, false);
+                } else {
+                    eb.addField(title, "Date: " + gameDate + "\nOdds: " + team1.getOdds() + " VS Odds: " + team2.getOdds(), false);
+                }
             }
             eb.setFooter("/bet <Team Abbreviation> <Amount>");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create weekly message", e.getMessage());
+            LogManager.error("Cannot create weekly message", e.getStackTrace().toString());
         }
         return null;
     }

@@ -1,24 +1,29 @@
-package com.github.awasur04.toastybets.managers;
+package com.github.awasur04.toastybets.game;
 
 import com.github.awasur04.toastybets.database.DatabaseManager;
 import com.github.awasur04.toastybets.discord.DiscordManager;
 import com.github.awasur04.toastybets.models.Game;
 import com.github.awasur04.toastybets.models.Team;
+import com.github.awasur04.toastybets.scheduling.ScheduledEventsManager;
 import com.github.awasur04.toastybets.services.UpdateGames;
+import com.github.awasur04.toastybets.utilities.LogManager;
 
 import java.time.ZonedDateTime;
 import java.util.*;
 
 public class GameManager {
-    private Map<Integer, Team> teamList;
+    private HashMap<Integer, Team> teamList;
     private DatabaseManager databaseManager;
     private HashMap<Long, Game> currentWeekGames;
     private UpdateGames update;
     private ScheduledEventsManager eventsManager;
     private DiscordManager discordManager;
+    private BetManager betManager;
     private int currentWeek;
 
     public GameManager(String token) {
+        LogManager.log("\nProgram starting");
+
         this.teamList = new HashMap<>() {{
             put(1, new Team(1,"Atlanta Falcons", "ATL"));
             put(2, new Team(2, "Buffalo Bills", "BUF"));
@@ -33,7 +38,7 @@ public class GameManager {
             put(11, new Team(11, "Indianapolis Colts", "IND"));
             put(12, new Team(12, "Kansas City Chiefs", "KC"));
             put(13, new Team(13, "Las Vegas Raiders", "LV"));
-            put(14, new Team(14, "Las Angeles Rams", "LAR"));
+            put(14, new Team(14, "Los Angeles Rams", "LAR"));
             put(15, new Team(15, "Miami Dolphins", "MIA"));
             put(16, new Team(16, "Minnesota Vikings", "MIN"));
             put(17, new Team(17, "New England Patriots", "NE"));
@@ -54,19 +59,19 @@ public class GameManager {
             put(34, new Team(34, "Houston Texans", "HOU"));
         }};
         this.currentWeekGames = new HashMap<>();
-
-
-
-
         this.update = new UpdateGames(this);
         this.eventsManager = new ScheduledEventsManager();
         this.databaseManager = new DatabaseManager();
-        this.discordManager = new DiscordManager(token, this);
-        LogManager.log("Program starting");
-        update.updateSchedule();
-        scheduleEvents();
+        this.betManager = new BetManager(this);
+        this.discordManager = new DiscordManager(token, this, this.betManager);
+        initialize();
     }
 
+    private void initialize() {
+        update.updateSchedule();
+        update.updateScore();
+        scheduleEvents();
+    }
 
     ///update schedule, update score, update odds
     private void scheduleEvents() {
@@ -75,6 +80,11 @@ public class GameManager {
         eventsManager.addEvent(update::updateScore, ScheduledEventsManager.UpdateFrequency.THURSDAYNIGHT); //Update score on thursday games
         eventsManager.addEvent(update::updateScore, ScheduledEventsManager.UpdateFrequency.MONDAYNIGHT); //Update score on monday night
     }
+
+    public HashMap<Integer, Team> getTeamList() {
+        return this.teamList;
+    }
+
     public void closeProgram() {
         LogManager.log("Program shutting down");
         eventsManager.shutdownExecutor();
@@ -88,7 +98,7 @@ public class GameManager {
             currentWeekGames.put(gameId, new Game(team1, team2, gameTime));
         } catch (Exception e) {
             System.out.println("Error adding game");
-            System.out.println(e.getMessage());
+            System.out.println(e.getStackTrace());
         }
     }
 
@@ -103,9 +113,6 @@ public class GameManager {
         scheduleEvents();
     }
 
-    public HashMap<Long, Game> getCurrentWeekGames() {
-        return currentWeekGames;
-    }
     public int getCurrentWeek() {
         return currentWeek;
     }
@@ -119,10 +126,11 @@ public class GameManager {
         return temp;
     }
 
-    public void updateScores(long matchId, int team1score, int team2score) {
+    public void updateScores(long matchId, int team1score, int team2score, boolean gameCompleted) {
         Game currentGame = currentWeekGames.get(matchId);
         currentGame.getTeams().get(0).setScore(team1score);
         currentGame.getTeams().get(1).setScore(team2score);
+        currentGame.setGameCompleted(gameCompleted);
     }
 
     public void printGames() {
@@ -135,6 +143,24 @@ public class GameManager {
 
     public DatabaseManager getDB() {
         return this.databaseManager;
+    }
+
+    public Team getTeamByName(String teamName) {
+        for (Team team : this.teamList.values()) {
+            if (team.getName().equalsIgnoreCase(teamName)) {
+                return team;
+            }
+        }
+        return null;
+    }
+
+    public Team getTeamByAbbreviation(String teamAbbreviation) {
+        for (Team team : this.teamList.values()) {
+            if (team.getAbbreviation().equalsIgnoreCase(teamAbbreviation)) {
+                return team;
+            }
+        }
+        return null;
     }
 
 }

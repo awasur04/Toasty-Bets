@@ -1,12 +1,6 @@
 package com.github.awasur04.toastybets;
 
-import com.github.awasur04.toastybets.database.DatabaseManager;
-import com.github.awasur04.toastybets.discord.CommandHandler;
-import com.github.awasur04.toastybets.discord.DiscordManager;
-import com.github.awasur04.toastybets.managers.GameManager;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Activity;
+import com.github.awasur04.toastybets.game.GameManager;
 
 import javax.security.auth.login.LoginException;
 
