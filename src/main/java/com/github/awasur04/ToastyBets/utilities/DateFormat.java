@@ -1,4 +1,4 @@
-package com.github.awasur04.toastybets.utilities;
+package com.github.awasur04.ToastyBets.utilities;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

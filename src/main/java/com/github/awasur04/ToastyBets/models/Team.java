@@ -1,4 +1,4 @@
-package com.github.awasur04.toastybets.models;
+package com.github.awasur04.ToastyBets.models;
 
 public class Team {
     private int id;
