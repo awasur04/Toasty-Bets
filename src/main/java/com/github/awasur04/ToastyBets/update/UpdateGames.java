@@ -1,6 +1,6 @@
 package com.github.awasur04.ToastyBets.update;
 
-import com.github.awasur04.ToastyBets.game.GameController;
+import com.github.awasur04.ToastyBets.game.GameManager;
 import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.models.Team;
 import com.github.awasur04.ToastyBets.models.TeamList;
@@ -10,9 +10,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -22,14 +20,14 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Scanner;
 
-@Service
+@Component
 public class UpdateGames {
 
     @Value("${nfl.score.update}")
     private String scheduleURL;
 
     @Autowired
-    private GameController gameController;
+    private GameManager gameManager;
 
     public void updateSchedule() {
         try {
@@ -38,8 +36,8 @@ public class UpdateGames {
             JSONObject dataObject = (JSONObject) parser.parse(retrieveJson(scheduleURL));
 
 
-            String weekNumber = dataObject.get("week").toString();
-            gameController.setWeekNumber(Integer.valueOf(weekNumber));
+            JSONObject weekNumber = (JSONObject)dataObject.get("week");
+            gameManager.setWeekNumber(Integer.valueOf(weekNumber.get("number").toString()));
 
             JSONArray events = (JSONArray) dataObject.get("events");
             for (Object game : events) {
@@ -63,10 +61,10 @@ public class UpdateGames {
                 LocalDate gameDate = LocalDate.of(Integer.valueOf(rawGameDate.substring(0, 4)), Integer.valueOf(rawGameDate.substring(5, 7)), Integer.valueOf(rawGameDate.substring(8, 10)));
                 LocalTime gameTime = LocalTime.of(Integer.valueOf(rawGameDate.substring(11, 13)), Integer.valueOf(rawGameDate.substring(14, 16)), 00);
 
-                gameController.addGame(matchId, new Game(team1, team2, ZonedDateTime.of(gameDate, gameTime, ZoneId.of("Europe/London"))));
+                gameManager.addGame(matchId, new Game(team1, team2, ZonedDateTime.of(gameDate, gameTime, ZoneId.of("Europe/London"))));
             }
         }catch (Exception e) {
-            LogManager.error("",e.getStackTrace().toString());
+            LogManager.error("Failed to update game schedule ",e.getMessage());
         }
     }
 
@@ -120,7 +118,7 @@ public class UpdateGames {
                 return currentLine;
             }
         }catch (Exception e) {
-            System.out.println(e.getStackTrace().toString());
+            LogManager.error("Failed to retrieve JSON file ", e.getMessage());
         }
         return "";
     }
