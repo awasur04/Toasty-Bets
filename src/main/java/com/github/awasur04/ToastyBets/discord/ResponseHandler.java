@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.awt.*;
 import java.time.ZoneId;
@@ -17,14 +18,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
+@Service
 public class ResponseHandler {
 
-    @Autowired
-    private DiscordService discordService;
-    @Autowired
-    private GameController gameController;
+    private static DiscordService discordService;
+    private static GameController gameController;
 
-    private JDA jda = discordService.getJda();
+    @Autowired
+    public void setDiscordService(DiscordService discordService) {
+        ResponseHandler.discordService = discordService;
+    }
+    @Autowired
+    public void setGameController(GameController gameController) {
+        ResponseHandler.gameController = gameController;
+    }
+
+    private JDA jda;
 
     public static HashMap<String, String> emojiValues = new HashMap<String, String>() {{
         put("ARI", "<:ARI:902972769623490631>");
@@ -63,6 +72,7 @@ public class ResponseHandler {
 
     public void sendWeeklySchedule(User user) {
         try {
+            this.jda = discordService.getJda();
             ArrayList<Game> gameList = gameController.getWeekSchedule();
             if (!gameList.isEmpty()) {
 
@@ -83,11 +93,12 @@ public class ResponseHandler {
                 }
             }
         }catch (Exception e) {
-            LogManager.error("Cannot send weekly schedule to user ID: " + user.getDiscordId(), e.getStackTrace().toString());
+            LogManager.error("Cannot send weekly schedule to user ID: " + user.getDiscordId(), e.getMessage());
         }
     }
 
     public void newUserSetup(User newUser) {
+        this.jda = discordService.getJda();
         net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(newUser.getDiscordId());
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
             discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(timeZoneMessage())).queue();
@@ -95,6 +106,7 @@ public class ResponseHandler {
     }
 
     public void displayHelp(String discordId) {
+        this.jda = discordService.getJda();
         net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(discordId);
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
             discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(helpMessage())).queue();
@@ -108,14 +120,14 @@ public class ResponseHandler {
             eb.setTitle("Welcome to Toasty Bets NFL Betting Bot");
             eb.addField("","Every wednesday you will be sent a new weekly schedule", false);
             eb.addField("","This schedule will contain the teams and current betting rate", false);
-            eb.addField("","Once you place a bet at a certain rate that bet is locked in (NO CANCELING)", false);
-            eb.addField("","Bets will be paid out at the end of each day a game is played", false);
+            eb.addField("","Once you place a bet at a certain rate that bet is locked in (NO CANCELLING)", false);
+            eb.addField("","Bets will be paid out within 1 hour of the game end", false);
             eb.addField("","You start with 1000 ToastyCoins, and will receive 200 ToastyCoins each week", false);
             eb.addField("", "Total Payout = Betting Odds * Bet Amount", false);
             eb.setFooter("Comments, questions, or ideas please message me @cool#5783");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create help message", e.getStackTrace().toString());
+            LogManager.error("Cannot create help message", e.getMessage());
         }
         return null;
     }
@@ -123,18 +135,19 @@ public class ResponseHandler {
     public MessageEmbed timeZoneMessage() {
         try {
             EmbedBuilder eb = new EmbedBuilder();
-            eb.setTitle("Please Register your Account");
-            eb.setDescription("Supported Time Zones:\nPlease make sure you include the timezone in your command like in the picture");
-            eb.setImage("https://i.imgur.com/prrJSno.png");
+            eb.setTitle("Please update your timezone");
+            eb.setImage("https://i.imgur.com/ftqjjKb.png");
+            eb.setDescription("Supported Time Zones:");
             eb.addField("EST", "Eastern Standard Time", false);
             eb.addField("CST", "Central Standard Time", false);
             eb.addField("MST", "Mountain Standard Time", false);
             eb.addField("PST", "Pacific Standard Time", false);
             eb.addField("BST", "British Summer Time", false);
+            eb.addField("","Please make sure you include the selected timezone in your command like below", false);
             eb.setFooter("Please register your time zone using the command /timezone <abbreviation>");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create weekly message", e.getStackTrace().toString());
+            LogManager.error("Cannot create weekly message", e.getMessage());
         }
         return null;
     }
@@ -160,7 +173,7 @@ public class ResponseHandler {
             eb.setFooter("/bet <Team Abbreviation> <Amount>");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create weekly message", e.getStackTrace().toString());
+            LogManager.error("Cannot create weekly message", e.getMessage());
         }
         return null;
     }
