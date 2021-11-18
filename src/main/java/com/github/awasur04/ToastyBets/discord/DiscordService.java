@@ -5,13 +5,9 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PreDestroy;
 import javax.security.auth.login.LoginException;
 
 @Service
@@ -22,7 +18,7 @@ public class DiscordService {
     @Value("${discord.token}")
     private String discordToken;
 
-    public void startBot() throws LoginException, InterruptedException {
+    public void startBot() throws LoginException {
         this.jda = JDABuilder.createDefault(this.discordToken)
                 .setActivity(Activity.playing("Coming soon ;)"))
                 .addEventListeners(new CommandHandler())
@@ -35,7 +31,6 @@ public class DiscordService {
         );
     }
 
-    @PreDestroy
     public void stopBot() {
         this.jda.shutdown();
     }
@@ -45,7 +40,6 @@ public class DiscordService {
             this.jda.upsertCommand(command).queue();
         }
     }
-
     public JDA getJda() {
         return jda;
     }
