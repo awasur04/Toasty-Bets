@@ -1,19 +1,29 @@
 package com.github.awasur04.ToastyBets.discord;
 
-import com.github.awasur04.ToastyBets.database.DatabaseController;
+import com.github.awasur04.ToastyBets.database.DatabaseService;
 import com.github.awasur04.ToastyBets.models.User;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 
+@Service
 public class CommandHandler extends ListenerAdapter {
 
+    private static DatabaseService databaseService;
+    private static ResponseHandler responseHandler;
+
     @Autowired
-    private DatabaseController databaseController;
+    public void setDatabaseService(DatabaseService ds) {
+        CommandHandler.databaseService = ds;
+    }
+
     @Autowired
-    private ResponseHandler responseHandler;
+    public void setResponseHandler(ResponseHandler rs) {
+        CommandHandler.responseHandler = rs;
+    }
 
     public static HashMap<String, String> timeZones = new HashMap<>() {{
         put("EST","America/New_York");
@@ -26,26 +36,28 @@ public class CommandHandler extends ListenerAdapter {
     /**
      * commands:
      * join
-     * register
-     * generate(ND)
-     * redeem(ND)
-     * bet(ND)
-     * schedule(ND)
-     * report(ND)
+     * timezone
+     * schedule
+     * bet(WIP)
+     * report(P)
+     * admin(P)
+     * generate(P)
+     * redeem(P)
      */
 
 
     @Override
     public void onSlashCommand(SlashCommandEvent event) {
+
         net.dv8tion.jda.api.entities.User source = event.getUser();
-        User sourceUser = databaseController.findUser(source.getId());
+        User sourceUser = databaseService.findUser(source.getId());
 
         if (event.getName().equalsIgnoreCase("join")) {
             event.deferReply().queue();
             if (sourceUser != null) {
                 source.openPrivateChannel().flatMap(channel -> channel.sendMessage("You are not able to join once already registered, if you believe this is an error please reach out to an admin.")).queue();
             } else {
-                sourceUser = databaseController.addNewUser(source.getId(), source.getName());
+                sourceUser = databaseService.addNewUser(source.getId(), source.getName());
                 responseHandler.newUserSetup(sourceUser);
             }
             event.getHook().sendMessage("Please check your dm's").queue();
@@ -54,9 +66,10 @@ public class CommandHandler extends ListenerAdapter {
             event.deferReply().queue();
 
             String updateTimeZone = event.getOption("timezone").getAsString().toUpperCase();
-
-            sourceUser.setTimeZone(timeZones.get(updateTimeZone));
-            if (databaseController.updateUser(sourceUser)) {
+            String selectedTimeZone = timeZones.get(updateTimeZone);
+            sourceUser.setTimeZone(selectedTimeZone);
+            if (!selectedTimeZone.isBlank()) {
+                databaseService.updateUser(sourceUser);
                 responseHandler.displayHelp(source.getId());
                 responseHandler.sendWeeklySchedule( sourceUser);
                 event.getHook().sendMessage("Success").queue();
@@ -64,11 +77,11 @@ public class CommandHandler extends ListenerAdapter {
                 event.getHook().sendMessage("Invalid Time zone, please try again").queue();
             }
 
-       }//else if (event.getName().equalsIgnoreCase("test")) {
-//            event.deferReply().queue();
-//            discordManager.printWeeklySchedule(event.getUser().getId());
-//            event.getHook().sendMessage(";)").queue();
-//        } else if (event.getName().equalsIgnoreCase("bet")) {
+       }else if (event.getName().equalsIgnoreCase("schedule")) {
+            event.deferReply().queue();
+            responseHandler.sendWeeklySchedule(sourceUser);
+            event.getHook().sendMessage("Complete").queue();
+        } //else if (event.getName().equalsIgnoreCase("bet")) {
 //            event.deferReply().queue();
 //            try {
 //                String teamAbbreviation = event.getOption("team_abbreviation").getAsString().toUpperCase();
