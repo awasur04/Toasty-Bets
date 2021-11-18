@@ -13,13 +13,13 @@ public class DateFormat {
         StringBuilder sb = new StringBuilder();
 
         switch(eventDate.getDayOfWeek()) {
-            case SUNDAY -> sb.append("Sunday ");
-            case MONDAY -> sb.append("Monday ");
-            case TUESDAY -> sb.append("Tuesday ");
-            case WEDNESDAY -> sb.append("Wednesday ");
-            case THURSDAY -> sb.append("Thursday ");
-            case FRIDAY -> sb.append("Friday ");
-            case SATURDAY -> sb.append("Saturday ");
+            case SUNDAY -> sb.append("Sunday, ");
+            case MONDAY -> sb.append("Monday, ");
+            case TUESDAY -> sb.append("Tuesday, ");
+            case WEDNESDAY -> sb.append("Wednesday, ");
+            case THURSDAY -> sb.append("Thursday, ");
+            case FRIDAY -> sb.append("Friday, ");
+            case SATURDAY -> sb.append("Saturday, ");
         }
 
         switch(eventDate.getMonth()) {
