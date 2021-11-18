@@ -2,14 +2,14 @@ package com.github.awasur04.ToastyBets.game;
 
 import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
-import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
-@Controller
-public class GameController {
+@Component
+public class GameManager {
     private HashMap<Long, Game> weekSchedule = new HashMap<>();
     private int weekNumber;
 
@@ -38,7 +38,7 @@ public class GameController {
                 this.weekSchedule.put(matchId, game);
             }
         }catch (Exception e) {
-            LogManager.error("Failed to add game to weekly schedule", e.getStackTrace().toString());
+            LogManager.error("Failed to add game to weekly schedule", e.getMessage());
         }
 
     }

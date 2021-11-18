@@ -1,6 +1,6 @@
 package com.github.awasur04.ToastyBets.discord;
 
-import com.github.awasur04.ToastyBets.game.GameController;
+import com.github.awasur04.ToastyBets.game.GameManager;
 import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.models.Team;
 import com.github.awasur04.ToastyBets.models.User;
@@ -22,15 +22,15 @@ import java.util.Random;
 public class ResponseHandler {
 
     private static DiscordService discordService;
-    private static GameController gameController;
+    private static GameManager gameManager;
 
     @Autowired
     public void setDiscordService(DiscordService discordService) {
         ResponseHandler.discordService = discordService;
     }
     @Autowired
-    public void setGameController(GameController gameController) {
-        ResponseHandler.gameController = gameController;
+    public void setGameController(GameManager gameManager) {
+        ResponseHandler.gameManager = gameManager;
     }
 
     private JDA jda;
@@ -73,7 +73,7 @@ public class ResponseHandler {
     public void sendWeeklySchedule(User user) {
         try {
             this.jda = discordService.getJda();
-            ArrayList<Game> gameList = gameController.getWeekSchedule();
+            ArrayList<Game> gameList = gameManager.getWeekSchedule();
             if (!gameList.isEmpty()) {
 
                 Random random = new Random();
@@ -82,7 +82,7 @@ public class ResponseHandler {
                 float b = random.nextFloat();
                 Color weeklyColor = new Color(r,g,b);
 
-                int weekNumber = gameController.getWeekNumber();
+                int weekNumber = gameManager.getWeekNumber();
 
                 net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(user.getDiscordId());
 
