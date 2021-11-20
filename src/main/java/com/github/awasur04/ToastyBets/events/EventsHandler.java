@@ -1,8 +1,8 @@
 package com.github.awasur04.ToastyBets.events;
 
-
-import com.github.awasur04.ToastyBets.discord.CommandHandler;
 import com.github.awasur04.ToastyBets.discord.DiscordService;
+import com.github.awasur04.ToastyBets.game.GameManager;
+import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.update.UpdateGames;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,13 +18,18 @@ public class EventsHandler {
     private DiscordService discordService;
     @Autowired
     private UpdateGames updateGames;
+    @Autowired
+    private GameManager gameManager;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationStart() {
         try {
             LogManager.log("Program Starting");
-            discordService.startBot();
             updateGames.updateSchedule();
+            updateGames.updateOdds();
+            gameManager.registerActiveBets();
+            discordService.startBot();
+            updateGames.updateScore();
         }catch (Exception e) {
             LogManager.error("Main Program: ", e.getMessage());
         }
