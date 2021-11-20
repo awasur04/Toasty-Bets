@@ -15,7 +15,7 @@ public class Team {
         this.abbreviation = abbreviation;
     }
     public Team(int id, String name, String abbreviation) {
-        this(id,0,name, abbreviation);
+        this(id,1,name, abbreviation);
     }
 
     public int getId() {
