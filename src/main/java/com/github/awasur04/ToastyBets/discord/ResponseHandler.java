@@ -1,9 +1,11 @@
 package com.github.awasur04.ToastyBets.discord;
 
 import com.github.awasur04.ToastyBets.game.GameManager;
+import com.github.awasur04.ToastyBets.models.Bet;
 import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.models.Team;
 import com.github.awasur04.ToastyBets.models.User;
+import com.github.awasur04.ToastyBets.models.enums.GameStatus;
 import com.github.awasur04.ToastyBets.utilities.DateFormat;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -29,7 +31,7 @@ public class ResponseHandler {
         ResponseHandler.discordService = discordService;
     }
     @Autowired
-    public void setGameController(GameManager gameManager) {
+    public void setGameManager(GameManager gameManager) {
         ResponseHandler.gameManager = gameManager;
     }
 
@@ -87,7 +89,6 @@ public class ResponseHandler {
                 net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(user.getDiscordId());
 
                 if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
-
                     MessageEmbed gameMessage = createGameMessage(gameList, weekNumber, weeklyColor, user.getTimeZone());
                     discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(gameMessage)).queue();
                 }
@@ -105,11 +106,19 @@ public class ResponseHandler {
         }
     }
 
-    public void displayHelp(String discordId) {
+    public void displayHelp(User targetUser) {
         this.jda = discordService.getJda();
-        net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(discordId);
+        net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(targetUser.getDiscordId());
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
             discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(helpMessage())).queue();
+        }
+    }
+
+    public void displayPayout(User targetUser, Bet payoutBet) {
+        this.jda = discordService.getJda();
+        net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(targetUser.getDiscordId());
+        if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
+            discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(payoutMessage(payoutBet))).queue();
         }
     }
 
@@ -121,13 +130,27 @@ public class ResponseHandler {
             eb.addField("","Every wednesday you will be sent a new weekly schedule", false);
             eb.addField("","This schedule will contain the teams and current betting rate", false);
             eb.addField("","Once you place a bet at a certain rate that bet is locked in (NO CANCELLING)", false);
+            eb.addField("", "Bets must be locked in 1 hour before event start", false);
             eb.addField("","Bets will be paid out within 1 hour of the game end", false);
-            eb.addField("","You start with 1000 ToastyCoins, and will receive 200 ToastyCoins each week", false);
+            eb.addField("","You start with 1,000 Toasty-Coins, and will receive 250 Toasty-Coins each week", false);
             eb.addField("", "Total Payout = Betting Odds * Bet Amount", false);
             eb.setFooter("Comments, questions, or ideas please message me @cool#5783");
             return eb.build();
         } catch (Exception e) {
             LogManager.error("Cannot create help message", e.getMessage());
+        }
+        return null;
+    }
+
+    public MessageEmbed payoutMessage(Bet bet) {
+        try {
+            EmbedBuilder eb = new EmbedBuilder();
+            eb.setTitle("Payout");
+            eb.addField(Integer.toString(bet.getTeamId()), Float.toString(bet.getPayout()), false);
+            eb.setFooter("For issues, please message me @cool#5783");
+            return eb.build();
+        } catch (Exception e) {
+            LogManager.error("Cannot create payout message", e.getMessage());
         }
         return null;
     }
@@ -163,7 +186,7 @@ public class ResponseHandler {
                 Team team2 = currentGame.getTeam(2);
                 String title = emojiValues.get(team1.getAbbreviation()) + currentGame.toString() + emojiValues.get(team2.getAbbreviation());
                 String gameDate = DateFormat.formatDate(currentGame.getGameTime().withZoneSameInstant(ZoneId.of(userZoneId)).toLocalDateTime());
-                if (currentGame.isGameCompleted()) {
+                if (currentGame.getGameStatus() == GameStatus.COMPLETED) {
                     String gameScore = team1.getScore() + " - " + team2.getScore();
                     eb.addField(title, "Date: " + gameDate + "\nFinal Score: " + gameScore, false);
                 } else {
