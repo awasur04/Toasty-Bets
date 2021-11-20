@@ -15,8 +15,8 @@ public class User {
     @Column(nullable = false)
     private String discordName;
 
-    @Column(nullable = false, columnDefinition = "integer default 1000")
-    private int toastyCoins;
+    @Column(nullable = false)
+    private float toastyCoins;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -24,8 +24,6 @@ public class User {
 
     @Column(nullable = false)
     private String timeZone;
-
-    //private ArrayList<Bet> currentBets;
 
 
     public String getDiscordName() {
@@ -40,7 +38,7 @@ public class User {
         return permissionLevel;
     }
 
-    public int getToastyCoins() {
+    public float getToastyCoins() {
         return toastyCoins;
     }
 
@@ -64,7 +62,7 @@ public class User {
         this.discordName = discordName;
     }
 
-    public void setToastyCoins(int toastyCoins) {
+    public void setToastyCoins(float toastyCoins) {
         this.toastyCoins = toastyCoins;
     }
 }
