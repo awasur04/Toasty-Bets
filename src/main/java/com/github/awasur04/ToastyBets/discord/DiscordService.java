@@ -1,5 +1,6 @@
 package com.github.awasur04.ToastyBets.discord;
 
+import com.github.awasur04.ToastyBets.utilities.LogManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -24,10 +25,14 @@ public class DiscordService {
                 .addEventListeners(new CommandHandler())
                 .build();
 
+        LogManager.log("Discord service online");
+
         registerCommands(
                 new CommandData("join", "Join Toasty Bets!"),
                 new CommandData("timezone", "Change your timezone").addOption(OptionType.STRING, "timezone", "Input your desired timezone", true),
-                new CommandData("bet", "Place a bet").addOption(OptionType.STRING, "team_abbreviation", "Team you want to bet on", true).addOption(OptionType.STRING, "amount", "Amount you would like to bet", true)
+                new CommandData("schedule", "Print the Current Schedule"),
+                new CommandData("bet", "Place a bet").addOption(OptionType.STRING, "team_abbreviation", "Team you want to bet on", true).addOption(OptionType.STRING, "amount", "Amount you would like to bet", true),
+                new CommandData("test", "Developer testing")
         );
     }
 
