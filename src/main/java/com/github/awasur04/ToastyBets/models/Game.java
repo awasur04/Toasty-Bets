@@ -1,5 +1,7 @@
 package com.github.awasur04.ToastyBets.models;
 
+import com.github.awasur04.ToastyBets.models.enums.GameStatus;
+import com.github.awasur04.ToastyBets.utilities.LogManager;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -8,18 +10,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Game implements Comparable {
+    private long matchId;
     private Team team1;
     private Team team2;
     private ZonedDateTime gameTime;
-    private boolean gameCompleted;
-    private boolean gameStarted;
+    private GameStatus gameStatus;
+    private ArrayList<Integer> team1BetIds;
+    private ArrayList<Integer> team2BetIds;
 
-    public Game(Team team1, Team team2, ZonedDateTime gameTime) {
+    public Game(long matchId, Team team1, Team team2, ZonedDateTime gameTime) {
+        this.matchId = matchId;
         this.team1 = team1;
         this.team2 = team2;
         this.gameTime = gameTime;
-        this.gameCompleted = false;
-        this.gameStarted = false;
+        this.gameStatus = GameStatus.SCHEDULED;
+        team1BetIds = new ArrayList<>();
+        team2BetIds = new ArrayList<>();
+    }
+
+    public GameStatus getGameStatus() {
+        return this.gameStatus;
+    }
+
+    public void setGameStatus(GameStatus gameStatus) {
+        this.gameStatus = gameStatus;
     }
 
     public ZonedDateTime getGameTime() {
@@ -30,20 +44,37 @@ public class Game implements Comparable {
         this.gameTime = gameTime;
     }
 
-    public boolean isGameCompleted() {
-        return gameCompleted;
+
+    public boolean teamExists(Team team) {
+        if (team1.equals(team) || team2.equals(team)) {
+            return true;
+        }
+        return false;
     }
 
-    public void setGameCompleted(boolean gameStatus) {
-        this.gameCompleted = gameStatus;
+    public long getMatchId() {
+        return matchId;
     }
 
-    public void setGameStarted(boolean gameStarted) {
-        this.gameStarted = gameStarted;
+    public ArrayList<Integer> getTeam1BetIds() {
+        return team1BetIds;
     }
 
-    public boolean isGameStarted() {
-        return gameStarted;
+    public ArrayList<Integer> getTeam2BetIds() {
+        return team2BetIds;
+    }
+
+    public void addBet(Team team, int betId) {
+        if (team.equals(this.team1)) {
+            this.team1BetIds.add(betId);
+        } else if (team.equals(this.team2)) {
+            this.team2BetIds.add(betId);
+        }
+    }
+
+    public void removeBet(Integer betId) {
+        team1BetIds.remove(betId);
+        team2BetIds.remove(betId);
     }
 
     public Team getTeam(int teamNumber) {
@@ -59,13 +90,25 @@ public class Game implements Comparable {
 
 
     public Team getWinner() {
-        if (gameCompleted) {
+        if (gameStatus == GameStatus.COMPLETED) {
             if (team1.getScore() > team2.getScore()) {
                 return team1;
             } else if (team1.getScore() < team2.getScore()){
                 return team2;
             } else {
                 return null;
+            }
+        }
+        return null;
+    }
+
+    public ArrayList<Integer> getWinningBetIds() {
+        Team winningTeam = getWinner();
+        if (winningTeam != null) {
+            if (getWinner().equals(team1)) {
+                return team1BetIds;
+            } else if (getWinner().equals(team2)) {
+                return team2BetIds;
             }
         }
         return null;
