@@ -2,6 +2,7 @@ package com.github.awasur04.ToastyBets.game;
 
 import com.github.awasur04.ToastyBets.database.DatabaseService;
 import com.github.awasur04.ToastyBets.discord.ResponseHandler;
+import com.github.awasur04.ToastyBets.exceptions.GameLockedException;
 import com.github.awasur04.ToastyBets.models.Bet;
 import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.models.Team;
@@ -13,6 +14,9 @@ import com.github.awasur04.ToastyBets.utilities.TeamList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
@@ -69,12 +73,17 @@ public class GameManager {
 
     }
 
-    public void createNewBet(User source, Team betTeam, int betAmount) {
+    public void createNewBet(User source, Team betTeam, int betAmount) throws GameLockedException{
         try {
             Game betGame = getGame(betTeam);
             if (betGame == null) {
                 throw new NullPointerException("Unable to place bet: Invalid team abbreviation");
             }
+
+            if (betGame.getGameStatus() == GameStatus.IN_PROGRESS || betGame.getGameStatus() == GameStatus.COMPLETED) {
+                throw new GameLockedException("Game has already started");
+            }
+
             float newCoinBalance = source.getToastyCoins() - betAmount;
             source.setToastyCoins(newCoinBalance);
             databaseService.updateUser(source);
@@ -90,7 +99,9 @@ public class GameManager {
             databaseService.saveNewBet(newBet);
 
             betGame.addBet(betTeam, newBet.getBetId());
-            //UPDATE CURRENT BET MESSAGE
+            responseHandler.payoutMessage(source, weekNumber);
+        } catch (GameLockedException gm) {
+            throw new GameLockedException(gm.getMessage());
         } catch (Exception e) {
             LogManager.error("Failed to create new bet ", e.getMessage());
         }
@@ -111,6 +122,7 @@ public class GameManager {
                 case "STATUS_FINAL":
                     currentGame.setGameStatus(GameStatus.COMPLETED);
                     payoutCompletedGame(matchId);
+                    removeCompletedLosers(matchId);
                     break;
             }
         }catch(Exception e) {
@@ -139,10 +151,10 @@ public class GameManager {
                     float newBalance = currentUser.getToastyCoins() + currentBet.getPayout();
                     if (newBalance >= 0 && currentBet.getBetStatus() == BetStatus.ACTIVE) {
                         currentUser.setToastyCoins(newBalance);
-                        currentBet.setBetStatus(BetStatus.ARCHIVED);
+                        currentBet.setBetStatus(BetStatus.WON);
                         iterator.remove();
 
-                        responseHandler.displayPayout(currentUser, currentBet);
+                        responseHandler.payoutMessage(currentUser, weekNumber);
 
                         databaseService.updateBet(currentBet);
                         databaseService.updateUser(currentUser);
