@@ -116,4 +116,12 @@ public class DatabaseService {
         }
     }
 
+    public List<User> findActiveUsers() {
+        try {
+            return userRepository.getActiveUsers();
+        }catch(Exception e) {
+            LogManager.error("Failed to find current week bets ", e.getMessage());
+            return null;
+        }
+    }
 }
