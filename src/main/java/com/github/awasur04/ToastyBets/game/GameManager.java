@@ -159,6 +159,28 @@ public class GameManager {
         }
     }
 
+    public void removeCompletedLosers(long matchId) {
+        try {
+            Game currentGame = weekSchedule.get(matchId);
+            if (currentGame.getGameStatus() == GameStatus.COMPLETED) {
+                ArrayList<Integer> losers = currentGame.getLosingBetIds();
+                for (Iterator<Integer> iterator = losers.iterator(); iterator.hasNext();) {
+                    Bet currentBet = databaseService.findBet(iterator.next());
+                    User currentUser = databaseService.findUser(currentBet.getDiscordId());
+                    if (currentBet.getBetStatus() == BetStatus.ACTIVE) {
+                        currentBet.setBetStatus(BetStatus.LOST);
+                        iterator.remove();
+
+                        databaseService.updateBet(currentBet);
+                        responseHandler.payoutMessage(currentUser, weekNumber);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LogManager.error("Failed to remove losing bets ", e.getMessage());
+        }
+    }
+
     public void registerActiveBets() {
         try {
             List<Bet> activeBets = databaseService.findActiveBets();
