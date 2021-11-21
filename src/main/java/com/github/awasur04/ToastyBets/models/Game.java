@@ -1,13 +1,11 @@
 package com.github.awasur04.ToastyBets.models;
 
 import com.github.awasur04.ToastyBets.models.enums.GameStatus;
-import com.github.awasur04.ToastyBets.utilities.LogManager;
 import org.jetbrains.annotations.NotNull;
 
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.List;
 
 public class Game implements Comparable {
     private long matchId;
@@ -113,6 +111,19 @@ public class Game implements Comparable {
         }
         return null;
     }
+
+    public ArrayList<Integer> getLosingBetIds() {
+        Team winningTeam = getWinner();
+        if (winningTeam != null) {
+            if (getWinner().equals(team1)) {
+                return team2BetIds;
+            } else if (getWinner().equals(team2)) {
+                return team1BetIds;
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public String toString() {
