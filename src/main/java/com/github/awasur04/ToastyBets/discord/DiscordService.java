@@ -32,7 +32,9 @@ public class DiscordService {
                 new CommandData("timezone", "Change your timezone").addOption(OptionType.STRING, "timezone", "Input your desired timezone", true),
                 new CommandData("schedule", "Print the Current Schedule"),
                 new CommandData("bet", "Place a bet").addOption(OptionType.STRING, "team_abbreviation", "Team you want to bet on", true).addOption(OptionType.STRING, "amount", "Amount you would like to bet", true),
-                new CommandData("test", "Developer testing")
+                new CommandData("dev", "Developer testing"),
+                new CommandData("help", "Show help menu"),
+                new CommandData("deactivate", "Deactivate your account (you can always activate it again using /join)")
         );
     }
 
