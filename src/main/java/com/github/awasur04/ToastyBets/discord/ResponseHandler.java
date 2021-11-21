@@ -5,22 +5,28 @@ import com.github.awasur04.ToastyBets.models.Bet;
 import com.github.awasur04.ToastyBets.models.Game;
 import com.github.awasur04.ToastyBets.models.Team;
 import com.github.awasur04.ToastyBets.models.User;
+import com.github.awasur04.ToastyBets.models.enums.BetStatus;
 import com.github.awasur04.ToastyBets.models.enums.GameStatus;
 import com.github.awasur04.ToastyBets.utilities.DateFormat;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
+import com.github.awasur04.ToastyBets.utilities.TeamList;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.PrivateChannel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import java.awt.*;
+import java.awt.Color;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
-@Service
+@Component
 public class ResponseHandler {
 
     private static DiscordService discordService;
@@ -36,6 +42,8 @@ public class ResponseHandler {
     }
 
     private JDA jda;
+    private HashMap<String, Message> cachedScheduleMessages;
+    private HashMap<String, Message> cachedBetMessage;
 
     public static HashMap<String, String> emojiValues = new HashMap<String, String>() {{
         put("ARI", "<:ARI:902972769623490631>");
@@ -86,11 +94,18 @@ public class ResponseHandler {
 
                 int weekNumber = gameManager.getWeekNumber();
 
-                net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(user.getDiscordId());
+                net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(user.getDiscordId()).complete();
 
                 if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
                     MessageEmbed gameMessage = createGameMessage(gameList, weekNumber, weeklyColor, user.getTimeZone());
-                    discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(gameMessage)).queue();
+                    Message cachedUserMessage = cachedScheduleMessages.get(user.getDiscordId());
+                    if (cachedUserMessage != null) {
+                        cachedUserMessage.editMessageEmbeds(gameMessage).queue();
+                    } else {
+                        PrivateChannel pm = discordUser.openPrivateChannel().complete();
+                        Message sentMessage = pm.sendMessageEmbeds(gameMessage).complete();
+                        cachedScheduleMessages.put(user.getDiscordId(), sentMessage);
+                    }
                 }
             }
         }catch (Exception e) {
@@ -98,27 +113,45 @@ public class ResponseHandler {
         }
     }
 
+    public void payoutMessage(User user, int weekNumber) {
+        try {
+            List<Bet> currentUserBets = gameManager.getCurrentWeekBets(user);
+            Message cachedUserMessage = cachedBetMessage.get(user.getDiscordId());
+            net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(user.getDiscordId()).complete();
+            if (cachedUserMessage != null) {
+                cachedUserMessage.editMessageEmbeds(betMessage(currentUserBets, weekNumber)).queue();
+            } else {
+                PrivateChannel pm = discordUser.openPrivateChannel().complete();
+                Message sentMessage = pm.sendMessageEmbeds(betMessage(currentUserBets, weekNumber)).complete();
+                cachedBetMessage.put(user.getDiscordId(), sentMessage);
+            }
+        } catch (Exception e) {
+            LogManager.error("Cannot update/send payout message", e.getMessage());
+        }
+    }
+
     public void newUserSetup(User newUser) {
         this.jda = discordService.getJda();
-        net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(newUser.getDiscordId());
+        net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(newUser.getDiscordId()).complete();
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
-            discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(timeZoneMessage())).queue();
+            discordUser.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(timeZoneMessage()).queue());
         }
     }
 
     public void displayHelp(User targetUser) {
         this.jda = discordService.getJda();
-        net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(targetUser.getDiscordId());
+        net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(targetUser.getDiscordId()).complete();
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
-            discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(helpMessage())).queue();
+            discordUser.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(helpMessage()).queue());
+            discordUser.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(timeZoneMessage()).queue());
         }
     }
 
-    public void displayPayout(User targetUser, Bet payoutBet) {
+    public void displayGameInfo(User targetUser) {
         this.jda = discordService.getJda();
-        net.dv8tion.jda.api.entities.User discordUser = jda.getUserById(targetUser.getDiscordId());
+        net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(targetUser.getDiscordId()).complete();
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
-            discordUser.openPrivateChannel().flatMap(privateChannel -> privateChannel.sendMessageEmbeds(payoutMessage(payoutBet))).queue();
+            discordUser.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(helpMessage()).queue());
         }
     }
 
@@ -132,7 +165,7 @@ public class ResponseHandler {
             eb.addField("","Once you place a bet at a certain rate that bet is locked in (NO CANCELLING)", false);
             eb.addField("", "Bets must be locked in 1 hour before event start", false);
             eb.addField("","Bets will be paid out within 1 hour of the game end", false);
-            eb.addField("","You start with 1,000 Toasty-Coins, and will receive 250 Toasty-Coins each week", false);
+            eb.addField("","You start with 1,000 Toasty Coins, and will receive 250 Toasty Coins each week", false);
             eb.addField("", "Total Payout = Betting Odds * Bet Amount", false);
             eb.setFooter("Comments, questions, or ideas please message me @cool#5783");
             return eb.build();
@@ -142,15 +175,25 @@ public class ResponseHandler {
         return null;
     }
 
-    public MessageEmbed payoutMessage(Bet bet) {
+    public MessageEmbed betMessage(List<Bet> currentBetList, int weekNumber) {
         try {
             EmbedBuilder eb = new EmbedBuilder();
-            eb.setTitle("Payout");
-            eb.addField(Integer.toString(bet.getTeamId()), Float.toString(bet.getPayout()), false);
+            eb.setTitle("Current Bets");
+            for (Bet bet : currentBetList) {
+                Team currentTeam = TeamList.teamList.get(bet.getTeamId());
+                Game currentGame = gameManager.getGame(currentTeam);
+                if (bet.getBetStatus() == BetStatus.LOST) {
+                    eb.addField(currentGame.toString(), "Potential Payout: " + bet.getPayout() + ", Status: LOSS", false);
+                } else if (bet.getBetStatus() == BetStatus.WON) {
+                    eb.addField(currentGame.toString(), "Potential Payout: " + bet.getPayout() + ", Status: WON", false);
+                } else {
+                    eb.addField(currentGame.toString(), "Potential Payout: " + bet.getPayout() + ", Status: TBD", false);
+                }
+            }
             eb.setFooter("For issues, please message me @cool#5783");
             return eb.build();
         } catch (Exception e) {
-            LogManager.error("Cannot create payout message", e.getMessage());
+            LogManager.error("Cannot create bets message", e.getMessage());
         }
         return null;
     }
@@ -159,7 +202,7 @@ public class ResponseHandler {
         try {
             EmbedBuilder eb = new EmbedBuilder();
             eb.setTitle("Please update your timezone");
-            eb.setImage("https://i.imgur.com/ftqjjKb.png");
+            eb.setImage("https://i.imgur.com/i8QXmko.png");
             eb.setDescription("Supported Time Zones:");
             eb.addField("EST", "Eastern Standard Time", false);
             eb.addField("CST", "Central Standard Time", false);
@@ -199,5 +242,18 @@ public class ResponseHandler {
             LogManager.error("Cannot create weekly message", e.getMessage());
         }
         return null;
+    }
+
+    public void resetCachedList() {
+        this.cachedBetMessage = new HashMap<>();
+        this.cachedScheduleMessages = new HashMap<>();
+    }
+
+    public void removeScheduleCache(String discordId) {
+        this.cachedScheduleMessages.remove(discordId);
+    }
+
+    public void removeBetCache(String discordId) {
+        this.cachedBetMessage.remove(discordId);
     }
 }
