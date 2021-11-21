@@ -188,4 +188,11 @@ public class GameManager {
         return databaseService.findCurrentWeekBets(this.weekNumber, source.getDiscordId());
     }
 
+    public void sendAllUsersSchedule() {
+        LogManager.log("Sending all users updated schedule");
+        List<User> activeUserList = databaseService.findActiveUsers();
+        for (User user : activeUserList) {
+            responseHandler.sendWeeklySchedule(user);
+        }
+    }
 }
