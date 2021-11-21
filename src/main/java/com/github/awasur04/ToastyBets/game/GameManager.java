@@ -184,4 +184,8 @@ public class GameManager {
         }
     }
 
+    public List<Bet> getCurrentWeekBets(User source) {
+        return databaseService.findCurrentWeekBets(this.weekNumber, source.getDiscordId());
+    }
+
 }
