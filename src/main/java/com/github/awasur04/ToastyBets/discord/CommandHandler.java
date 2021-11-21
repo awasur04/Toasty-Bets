@@ -1,10 +1,11 @@
 package com.github.awasur04.ToastyBets.discord;
 
 import com.github.awasur04.ToastyBets.database.DatabaseService;
+import com.github.awasur04.ToastyBets.exceptions.GameLockedException;
 import com.github.awasur04.ToastyBets.game.GameManager;
 import com.github.awasur04.ToastyBets.models.Team;
 import com.github.awasur04.ToastyBets.models.User;
-import com.github.awasur04.ToastyBets.update.UpdateGames;
+import com.github.awasur04.ToastyBets.models.enums.PermissionLevel;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
 import com.github.awasur04.ToastyBets.utilities.TeamList;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
@@ -20,11 +21,6 @@ public class CommandHandler extends ListenerAdapter {
     private static DatabaseService databaseService;
     private static ResponseHandler responseHandler;
     private static GameManager gameManager;
-
-    //For testing
-    private static UpdateGames updateGames;
-    @Autowired
-    public void setUpdateGames(UpdateGames updateGames) { CommandHandler.updateGames = updateGames; }
 
     @Autowired
     public void setDatabaseService(DatabaseService ds) {
@@ -55,8 +51,12 @@ public class CommandHandler extends ListenerAdapter {
      * timezone
      * schedule
      * bet
+     * help
+     * deactivate
+     * dev
      * report(P)
-     * admin(P)
+     * admin(P)  reset, changeperms, setdefaultchannel, banUser, unbanuser, setgenlimits
+     * give(P)
      * generate(P)
      * redeem(P)
      */
@@ -74,35 +74,74 @@ public class CommandHandler extends ListenerAdapter {
                 joinCommand(sourceUser, source);
                 break;
 
+            case "help":
+                event.reply("Done").queue();
+                responseHandler.displayHelp(sourceUser);
+                break;
+
             case "timezone":
-                timezoneCommand(sourceUser, event);
+                if (permissionCheck(sourceUser, PermissionLevel.NORMAL)) {
+                    timezoneCommand(sourceUser, event);
+                } else {
+                    event.reply("Sorry you do not have access to that command.").queue();
+                }
                 break;
 
             case "schedule":
-                event.reply("Done").queue();
-                responseHandler.sendWeeklySchedule(sourceUser);
+                if (permissionCheck(sourceUser, PermissionLevel.NORMAL)) {
+                    event.reply("Done").queue();
+                    responseHandler.removeScheduleCache(source.getId());
+                    responseHandler.sendWeeklySchedule(sourceUser);
+                } else {
+                    event.reply("Sorry you do not have access to that command.").queue();
+                }
                 break;
 
             case "bet":
-                betCommand(sourceUser, event);
+                if (permissionCheck(sourceUser, PermissionLevel.NORMAL)) {
+                    betCommand(sourceUser, event);
+                } else {
+                    event.reply("Sorry you do not have access to that command.").queue();
+                }
                 break;
 
-            case "test":
+            case "dev":
+                if (permissionCheck(sourceUser, PermissionLevel.DEV)) {
+                    System.out.println("test");
+                } else {
+                    event.reply("Sorry you do not have access to that command.").queue();
+                }
                 break;
 
+            case "deactivate":
+                deactivateCommand(sourceUser, source);
+                event.reply("Done").queue();
+                break;
 
+            }
+    }
 
-
+    public void joinCommand(User sourceUser, net.dv8tion.jda.api.entities.User discordSource) {
+        if (sourceUser == null) {
+            sourceUser = databaseService.addNewUser(discordSource.getId(), discordSource.getName());
+            responseHandler.newUserSetup(sourceUser);
+        } else if (sourceUser.getPermissionLevel() == PermissionLevel.INACTIVE) {
+            sourceUser.setPermissionLevel(PermissionLevel.NORMAL);
+            float userBalance = sourceUser.getToastyCoins();
+            databaseService.updateUser(sourceUser);
+            discordSource.openPrivateChannel().queue(channel -> channel.sendMessage("Welcome back, your current Toasty Coin balance is: " + userBalance).queue());
+        } else {
+            discordSource.openPrivateChannel().queue(channel -> channel.sendMessage("You are already an active member, if you believe there is an error please reach out to an admin.").queue());
         }
     }
 
-
-    public void joinCommand(User sourceUser, net.dv8tion.jda.api.entities.User discordSource) {
-        if (sourceUser != null) {
-            discordSource.openPrivateChannel().flatMap(channel -> channel.sendMessage("You are not able to join once already registered, if you believe this is an error please reach out to an admin.")).queue();
+    public void deactivateCommand(User sourceUser, net.dv8tion.jda.api.entities.User discordSource) {
+        if (sourceUser == null) {
+            discordSource.openPrivateChannel().queue(channel -> channel.sendMessage("Use /join to activate Toasty-Bets").queue());
         } else {
-            sourceUser = databaseService.addNewUser(discordSource.getId(), discordSource.getName());
-            responseHandler.newUserSetup(sourceUser);
+            sourceUser.setPermissionLevel(PermissionLevel.INACTIVE);
+            databaseService.updateUser(sourceUser);
+            discordSource.openPrivateChannel().queue(channel -> channel.sendMessage("Your account has been disabled, You may join back anytime using /join").queue());
         }
     }
 
@@ -113,7 +152,7 @@ public class CommandHandler extends ListenerAdapter {
         sourceUser.setTimeZone(selectedTimeZone);
         if (!selectedTimeZone.isBlank()) {
             databaseService.updateUser(sourceUser);
-            responseHandler.displayHelp(sourceUser);
+            responseHandler.displayGameInfo(sourceUser);
             responseHandler.sendWeeklySchedule( sourceUser);
             event.getHook().sendMessage("Success").queue();
         } else {
@@ -137,8 +176,18 @@ public class CommandHandler extends ListenerAdapter {
             } else {
                 event.getHook().sendMessage("Error please input a valid team abbreviation and bet amount").queue();
             }
+        }catch (GameLockedException gm) {
+            event.getHook().sendMessage("Sorry, that game is already locked").queue();
         }catch (Exception e) {
             LogManager.error("Error receiving bet command", e.getMessage());
+        }
+    }
+
+    public boolean permissionCheck(User source, PermissionLevel requiredLevel) {
+        if (source.getPermissionLevel().isGreaterThan(requiredLevel)) {
+            return true;
+        } else {
+            return false;
         }
     }
 }
