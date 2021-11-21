@@ -171,4 +171,17 @@ public class GameManager {
             LogManager.error("Unable to register active bets", e.getMessage());
         }
     }
+
+    public void checkGameStart() {
+        for (Game game : weekSchedule.values()) {
+            if (game.getGameStatus() == GameStatus.SCHEDULED) {
+                ZonedDateTime gameTime = game.getGameTime();
+                ZonedDateTime localTime = ZonedDateTime.now(ZoneId.of("UTC+0"));
+                if (ChronoUnit.MINUTES.between(gameTime, localTime) <= 60) {
+                    game.setGameStatus(GameStatus.IN_PROGRESS);
+                }
+            }
+        }
+    }
+
 }
