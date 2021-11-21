@@ -106,4 +106,14 @@ public class DatabaseService {
             return null;
         }
     }
+
+    public List<Bet> findCurrentWeekBets(int weekNumber, String discordId) {
+        try {
+            return betRepository.findUserCurrentWeekBets(weekNumber, discordId);
+        }catch(Exception e) {
+            LogManager.error("Failed to find current week bets ", e.getMessage());
+            return null;
+        }
+    }
+
 }
