@@ -21,20 +21,21 @@ public class DiscordService {
 
     public void startBot() throws LoginException {
         this.jda = JDABuilder.createDefault(this.discordToken)
-                .setActivity(Activity.playing("Coming soon ;)"))
+                .setActivity(Activity.playing("Use /register to help testing"))
                 .addEventListeners(new CommandHandler())
                 .build();
 
         LogManager.log("Discord service online");
 
         registerCommands(
-                new CommandData("join", "Join Toasty Bets!"),
+                new CommandData("register", "Join Toasty Bets!"),
                 new CommandData("timezone", "Change your timezone").addOption(OptionType.STRING, "timezone", "Input your desired timezone", true),
                 new CommandData("schedule", "Print the Current Schedule"),
                 new CommandData("bet", "Place a bet").addOption(OptionType.STRING, "team_abbreviation", "Team you want to bet on", true).addOption(OptionType.STRING, "amount", "Amount you would like to bet", true),
                 new CommandData("dev", "Developer testing"),
                 new CommandData("help", "Show help menu"),
-                new CommandData("deactivate", "Deactivate your account (you can always activate it again using /join)")
+                new CommandData("deactivate", "Deactivate your account (you can always activate it again using /register)"),
+                new CommandData("balance", "Display your current balance")
         );
     }
 
