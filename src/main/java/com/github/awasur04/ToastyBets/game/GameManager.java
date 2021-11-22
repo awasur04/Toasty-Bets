@@ -12,6 +12,7 @@ import com.github.awasur04.ToastyBets.models.enums.GameStatus;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
 import com.github.awasur04.ToastyBets.utilities.TeamList;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
@@ -25,6 +26,8 @@ public class GameManager {
     private int weekNumber;
     private static DatabaseService databaseService;
     private static ResponseHandler responseHandler;
+    @Value("#{new Integer('${user.default.toastycoin.pay}')}")
+    private int weeklyPay;
 
     @Autowired
     public void setResponseHandler(ResponseHandler responseHandler) {
@@ -84,7 +87,7 @@ public class GameManager {
                 throw new GameLockedException("Game has already started");
             }
 
-            float newCoinBalance = source.getToastyCoins() - betAmount;
+            int newCoinBalance = (int)Math.ceil(source.getToastyCoins() - betAmount);
             source.setToastyCoins(newCoinBalance);
             databaseService.updateUser(source);
 
@@ -118,11 +121,13 @@ public class GameManager {
                 case "STATUS_SCHEDULED":
                     currentGame.setGameStatus(GameStatus.SCHEDULED);
                     break;
-                //case "STATUS_IP": currentGame.setGameStatus(GameStatus.IN_PROGRESS); break;
+                case "STATUS_IN_PROGRESS": currentGame.setGameStatus(GameStatus.IN_PROGRESS); break;
                 case "STATUS_FINAL":
-                    currentGame.setGameStatus(GameStatus.COMPLETED);
-                    payoutCompletedGame(matchId);
-                    removeCompletedLosers(matchId);
+                    if (currentGame.getGameStatus() != GameStatus.COMPLETED) {
+                        currentGame.setGameStatus(GameStatus.COMPLETED);
+                        payoutCompletedGame(matchId);
+                        removeCompletedLosers(matchId);
+                    }
                     break;
             }
         }catch(Exception e) {
@@ -145,14 +150,13 @@ public class GameManager {
             Game currentGame = weekSchedule.get(matchId);
             if (currentGame.getGameStatus() == GameStatus.COMPLETED) {
                 ArrayList<Integer> winners = currentGame.getWinningBetIds();
-                for (Iterator<Integer> iterator = winners.iterator(); iterator.hasNext();) {
-                    Bet currentBet = databaseService.findBet(iterator.next());
+                for (Integer betId : winners) {
+                    Bet currentBet = databaseService.findBet(betId);
                     User currentUser = databaseService.findUser(currentBet.getDiscordId());
-                    float newBalance = currentUser.getToastyCoins() + currentBet.getPayout();
+                    int newBalance = (int)Math.ceil(currentUser.getToastyCoins() + currentBet.getPayout());
                     if (newBalance >= 0 && currentBet.getBetStatus() == BetStatus.ACTIVE) {
                         currentUser.setToastyCoins(newBalance);
                         currentBet.setBetStatus(BetStatus.WON);
-                        iterator.remove();
 
                         responseHandler.payoutMessage(currentUser, weekNumber);
 
@@ -162,6 +166,7 @@ public class GameManager {
                         totalPayouts++;
                     }
                 }
+                currentGame.clearBets(currentGame.getWinner());
             }
         }catch(Exception e) {
             LogManager.error("Failed to payout completed game ", e.getMessage());
@@ -176,17 +181,17 @@ public class GameManager {
             Game currentGame = weekSchedule.get(matchId);
             if (currentGame.getGameStatus() == GameStatus.COMPLETED) {
                 ArrayList<Integer> losers = currentGame.getLosingBetIds();
-                for (Iterator<Integer> iterator = losers.iterator(); iterator.hasNext();) {
-                    Bet currentBet = databaseService.findBet(iterator.next());
+                for (Integer loserId : losers) {
+                    Bet currentBet = databaseService.findBet(loserId);
                     User currentUser = databaseService.findUser(currentBet.getDiscordId());
                     if (currentBet.getBetStatus() == BetStatus.ACTIVE) {
-                        currentBet.setBetStatus(BetStatus.LOST);
-                        iterator.remove();
+                        currentBet.setBetStatus(BetStatus.LOSS);
 
                         databaseService.updateBet(currentBet);
                         responseHandler.payoutMessage(currentUser, weekNumber);
                     }
                 }
+                currentGame.clearBets(currentGame.getLoser());
             }
         } catch (Exception e) {
             LogManager.error("Failed to remove losing bets ", e.getMessage());
@@ -196,6 +201,7 @@ public class GameManager {
     public void registerActiveBets() {
         try {
             List<Bet> activeBets = databaseService.findActiveBets();
+            LogManager.log("Active Bets size " + activeBets.size());
             for(Bet bet : activeBets) {
                 Game betGame = weekSchedule.get(bet.getGameId());
                 Team betTeam = TeamList.teamList.get(bet.getTeamId());
@@ -211,7 +217,7 @@ public class GameManager {
             if (game.getGameStatus() == GameStatus.SCHEDULED) {
                 ZonedDateTime gameTime = game.getGameTime();
                 ZonedDateTime localTime = ZonedDateTime.now(ZoneId.of("UTC+0"));
-                if (ChronoUnit.MINUTES.between(gameTime, localTime) <= 60) {
+                if (ChronoUnit.MINUTES.between(localTime, gameTime) <= 60) {
                     game.setGameStatus(GameStatus.IN_PROGRESS);
                 }
             }
@@ -228,5 +234,23 @@ public class GameManager {
         for (User user : activeUserList) {
             responseHandler.sendWeeklySchedule(user);
         }
+    }
+
+    public void sendAllUsersBets() {
+        LogManager.log("Sending all users updated bet list");
+        Set<String> activeIdList = databaseService.getActiveBetUserIds(weekNumber);
+        for (String discordId : activeIdList) {
+            User currentUser = databaseService.findUser(discordId);
+            responseHandler.payoutMessage(currentUser, weekNumber);
+        }
+    }
+
+    public void payWeeklyUsers() {
+        LogManager.log("Paying all active users");
+        List<User> activeUserList = databaseService.findActiveUsers();
+        for (User user : activeUserList) {
+            int newBalance = (int)Math.ceil(user.getToastyCoins() + weeklyPay);
+        }
+        databaseService.updateAllUser(activeUserList);
     }
 }
