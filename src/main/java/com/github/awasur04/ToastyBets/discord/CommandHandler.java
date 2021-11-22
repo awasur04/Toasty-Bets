@@ -47,18 +47,20 @@ public class CommandHandler extends ListenerAdapter {
 
     /**
      * commands:
-     * join
+     * register
      * timezone
      * schedule
      * bet
      * help
      * deactivate
      * dev
-     * report(P)
-     * admin(P)  reset, changeperms, setdefaultchannel, banUser, unbanuser, setgenlimits
-     * give(P)
-     * generate(P)
-     * redeem(P)
+     * balance(ASAP)
+     * report(PLANNED)
+     * admin(PLANNED)  reset, changeperms, setdefaultchannel, banUser, unbanuser, setgenlimits
+     * give(PLANNED)
+     * generate(PLANNED)
+     * redeem(PLANNED)
+     * announce(IDEA)
      */
 
 
@@ -69,7 +71,7 @@ public class CommandHandler extends ListenerAdapter {
         User sourceUser = databaseService.findUser(source.getId());
 
         switch(event.getName().toLowerCase()) {
-            case "join":
+            case "register":
                 event.reply("Please check your private messages.").queue();
                 joinCommand(sourceUser, source);
                 break;
@@ -118,7 +120,11 @@ public class CommandHandler extends ListenerAdapter {
                 event.reply("Done").queue();
                 break;
 
-            }
+            case "balance":
+                int currentBalance = sourceUser.getToastyCoins();
+                event.reply("Your current balance is: " + currentBalance).queue();
+                break;
+        }
     }
 
     public void joinCommand(User sourceUser, net.dv8tion.jda.api.entities.User discordSource) {
@@ -141,20 +147,24 @@ public class CommandHandler extends ListenerAdapter {
         } else {
             sourceUser.setPermissionLevel(PermissionLevel.INACTIVE);
             databaseService.updateUser(sourceUser);
-            discordSource.openPrivateChannel().queue(channel -> channel.sendMessage("Your account has been disabled, You may join back anytime using /join").queue());
+            discordSource.openPrivateChannel().queue(channel -> channel.sendMessage("Your account has been disabled, You may join back anytime using /register").queue());
         }
     }
 
     public void timezoneCommand(User sourceUser, SlashCommandEvent event) {
         event.deferReply().queue();
         String updateTimeZone = event.getOption("timezone").getAsString().toUpperCase();
-        String selectedTimeZone = timeZones.get(updateTimeZone);
-        sourceUser.setTimeZone(selectedTimeZone);
-        if (!selectedTimeZone.isBlank()) {
-            databaseService.updateUser(sourceUser);
-            responseHandler.displayGameInfo(sourceUser);
-            responseHandler.sendWeeklySchedule( sourceUser);
-            event.getHook().sendMessage("Success").queue();
+        if (!updateTimeZone.isBlank()) {
+            String selectedTimeZone = timeZones.get(updateTimeZone);
+            if (!selectedTimeZone.isBlank()) {
+                sourceUser.setTimeZone(selectedTimeZone);
+                databaseService.updateUser(sourceUser);
+                responseHandler.displayGameInfo(sourceUser);
+                responseHandler.sendWeeklySchedule( sourceUser);
+                event.getHook().sendMessage("Success").queue();
+            } else {
+                event.getHook().sendMessage("Invalid Time zone, please try again").queue();
+            }
         } else {
             event.getHook().sendMessage("Invalid Time zone, please try again").queue();
         }
@@ -169,7 +179,7 @@ public class CommandHandler extends ListenerAdapter {
             if (!teamAbbreviation.isBlank() && betAmount > 0 && betTeam != null) {
                 if (sourceUser.getToastyCoins() >= betAmount) {
                     gameManager.createNewBet(sourceUser, betTeam, betAmount);
-                    event.getHook().sendMessage("Success " + teamAbbreviation + " Amount: " + betAmount).queue();
+                    event.getHook().sendMessage("Success, your bet has been placed").queue();
                 } else {
                     event.getHook().sendMessage("Error you only have " + sourceUser.getToastyCoins() + " Toasty Coins available.").queue();
                 }
