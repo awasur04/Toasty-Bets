@@ -7,6 +7,6 @@ import java.time.temporal.TemporalAdjuster;
 public class NextMidnight implements TemporalAdjuster {
     @Override
     public Temporal adjustInto(Temporal temporal) {
-        return temporal.with(ChronoField.CLOCK_HOUR_OF_DAY, 0);
+        return temporal.with(ChronoField.CLOCK_HOUR_OF_DAY, 24).with(ChronoField.MINUTE_OF_HOUR, 00);
     }
 }
