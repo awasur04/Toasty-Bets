@@ -86,6 +86,18 @@ public class Game implements Comparable {
         }
     }
 
+    public Team getLoser() {
+        if (gameStatus == GameStatus.COMPLETED) {
+            if (team1.getScore() > team2.getScore()) {
+                return team2;
+            } else if (team1.getScore() < team2.getScore()){
+                return team1;
+            } else {
+                return null;
+            }
+        }
+        return null;
+    }
 
     public Team getWinner() {
         if (gameStatus == GameStatus.COMPLETED) {
