@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface BetRepository extends CrudRepository<Bet, Integer> {
@@ -15,4 +16,7 @@ public interface BetRepository extends CrudRepository<Bet, Integer> {
 
     @Query(value = "SELECT * FROM bets WHERE week_number = :weekNumber AND discord_id = :discordId", nativeQuery = true)
     List<Bet> findUserCurrentWeekBets(@Param("weekNumber") int weekNumber, @Param("discordId") String discordId);
+
+    @Query(value = "SELECT discord_id FROM bets WHERE week_number = :weekNumber", nativeQuery = true)
+    Set<String> findActiveBetUserIds(@Param("weekNumber") int weekNumber);
 }
