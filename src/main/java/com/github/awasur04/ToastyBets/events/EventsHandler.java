@@ -34,10 +34,11 @@ public class EventsHandler {
             updateGames.updateSchedule();
             updateGames.updateOdds();
             gameManager.registerActiveBets();
-            //scheduledEventsManager.initialize();
+            scheduledEventsManager.initialize();
             responseHandler.resetCachedList();
             discordService.startBot();
             updateGames.updateScore();
+            gameManager.sendAllUsersBets();
         }catch (Exception e) {
             LogManager.error("Main Program: ", e.getMessage());
         }
@@ -47,6 +48,7 @@ public class EventsHandler {
     public void onApplicationClose() {
         LogManager.log("Program Shutting Down");
         discordService.stopBot();
+        scheduledEventsManager.shutdownExecutor();
         LogManager.closeLogs();
         LogManager.log("Shutdown Complete\n");
     }
@@ -59,13 +61,17 @@ public class EventsHandler {
         updateGames.updateOdds();
         scheduledEventsManager.weeklyUpdateReset();
         scheduledEventsManager.addWeeklyEvents();
+        gameManager.payWeeklyUsers();
         gameManager.sendAllUsersSchedule();
     }
 
     public void oddsUpdate() {
         updateGames.updateOdds();
-        gameManager.checkGameStart();
         gameManager.sendAllUsersSchedule();
+    }
+
+    public void gameCheck() {
+        gameManager.checkGameStart();
     }
 
     public void nextDay() {
