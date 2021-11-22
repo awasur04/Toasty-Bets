@@ -70,9 +70,12 @@ public class Game implements Comparable {
         }
     }
 
-    public void removeBet(Integer betId) {
-        team1BetIds.remove(betId);
-        team2BetIds.remove(betId);
+    public void clearBets(Team team) {
+        if (team.equals(this.team1)) {
+            this.team1BetIds = new ArrayList<>();
+        } else if (team.equals(this.team2)) {
+            this.team2BetIds = new ArrayList<>();
+        }
     }
 
     public Team getTeam(int teamNumber) {
