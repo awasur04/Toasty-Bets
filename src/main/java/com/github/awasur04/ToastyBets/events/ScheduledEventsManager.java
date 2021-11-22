@@ -12,12 +12,15 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -49,37 +52,50 @@ public class ScheduledEventsManager {
 
         switch(frequency){
             case WEEKLY:
-                //Run once at 2am on wednesday night
-                LocalDateTime wednesday = LocalDateTime.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY)).plusHours(2);
+                //Run once at 2 on wednesday night
+                LocalDate wednesdayDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY));
+                LocalDateTime wednesday = wednesdayDate.atStartOfDay();
                 long wednesdayOffset = LocalDateTime.now().until(wednesday, ChronoUnit.HOURS);
-                currentEvents.put(UpdateFrequency.WEEKLY, executorService.schedule(function, wednesdayOffset, TimeUnit.HOURS));
+                LogManager.log("New weekly event added in " + wednesdayOffset + " hours");
+                currentEvents.put(frequency, executorService.schedule(function, wednesdayOffset, TimeUnit.HOURS));
                 break;
 
             case ODDS:
                 //Start at 7am and update every hour
-                update(function, UpdateFrequency.ODDS, currentDate, null, new NextUpdate());
+                update(function, frequency, currentDate, new NextUpdate(), 60);
+                break;
+
+            case GAMECHECK:
+                //Start at 7am and update every 15 minutes
+                update(function, frequency, currentDate,new NextUpdate(), 15);
                 break;
 
             case NIGHTLYRESET:
                 //Run once every night at midnight
                 LocalDateTime resetTime = LocalDateTime.now( ZoneId.of("America/New_York") ).with(new NextMidnight());
                 long resetOffset = LocalDateTime.now().until(resetTime, ChronoUnit.MINUTES);
-                currentEvents.put(UpdateFrequency.NIGHTLYRESET, executorService.schedule(function, resetOffset, TimeUnit.MINUTES));
+
+                if (resetOffset < 0) {
+                    resetOffset = resetOffset + 1440;
+                }
+
+                LogManager.log("Nightly reset added in " + resetOffset + " minutes");
+                currentEvents.put(frequency, executorService.schedule(function, resetOffset, TimeUnit.MINUTES));
                 break;
 
             case THURSDAYSCORE:
                 //Start at 6pm central on thursday night and update every 30 minutes
-                update(function, frequency, currentDate, DayOfWeek.THURSDAY, new NextEvening());
+                update(function, frequency, currentDate, DayOfWeek.THURSDAY, new NextEvening(), 30);
                 break;
 
             case MONDAYSCORE:
                 //Start at 6pm central on monday night and update every 30 minutes
-                update(function, frequency, currentDate, DayOfWeek.MONDAY, new NextEvening());
+                update(function, frequency, currentDate, DayOfWeek.MONDAY, new NextEvening(), 30);
                 break;
 
             case SUNDAYSCORE:
                 //Start at 11am central on sunday and update every 30 minutes
-                update(function, frequency, currentDate, DayOfWeek.SUNDAY, new NextAfternoon());
+                update(function, frequency, currentDate, DayOfWeek.SUNDAY, new NextAfternoon(), 30);
                 break;
         }
     }
@@ -97,7 +113,8 @@ public class ScheduledEventsManager {
      *
      * Daily Updates:
      * NightReset
-     * 30 minute dailt update (Odds, checkgamelock)
+     * 30 minute odds check update
+     * 15 minute game check update
      */
 
 
@@ -122,30 +139,54 @@ public class ScheduledEventsManager {
 
     public void dailyUpdateReset() {
         currentEvents.get(UpdateFrequency.NIGHTLYRESET).cancel(false);
-        currentEvents.get( UpdateFrequency.ODDS).cancel(false);
+        currentEvents.get(UpdateFrequency.ODDS).cancel(false);
+        currentEvents.get(UpdateFrequency.GAMECHECK).cancel(false);
 
         currentEvents.remove(UpdateFrequency.NIGHTLYRESET);
         currentEvents.remove(UpdateFrequency.ODDS);
+        currentEvents.remove(UpdateFrequency.GAMECHECK);
     }
 
     public void addDailyEvents() {
-        addEvent(eventsHandler::oddsUpdate, UpdateFrequency.ODDS);
         addEvent(eventsHandler::nextDay, UpdateFrequency.NIGHTLYRESET);
+        addEvent(eventsHandler::oddsUpdate, UpdateFrequency.ODDS);
+        addEvent(eventsHandler::gameCheck, UpdateFrequency.GAMECHECK);
     }
 
-    public void update(@Nonnull Runnable function, UpdateFrequency updateFrequency, LocalDateTime dateTime, DayOfWeek dayOfWeek, TemporalAdjuster temporalAdjuster) {
-        if (dateTime.getDayOfWeek() == dayOfWeek || dayOfWeek == null) {
-            if (dateTime.getHour() < 11) {
-                LocalDateTime desiredDay = LocalDateTime.now( ZoneId.of("America/New_York") ).with(new NextAfternoon());
-                long desiredDayOffset = LocalDateTime.now().until(desiredDay, ChronoUnit.MINUTES);
-                currentEvents.put(updateFrequency, executorService.scheduleAtFixedRate(function, desiredDayOffset, 30,TimeUnit.MINUTES));
+    public void update(@Nonnull Runnable function, UpdateFrequency updateFrequency, LocalDateTime dateTime, DayOfWeek dayOfWeek, TemporalAdjuster temporalAdjuster, int periodCooldown) {
+        try {
+            int desiredStartTime = 1;
+
+            Random random = new Random();
+
+            if (dayOfWeek == null) {
+                desiredStartTime = 7;
             } else {
-                currentEvents.put(updateFrequency, executorService.scheduleAtFixedRate(function, 0, 30,TimeUnit.MINUTES));
+                switch(dayOfWeek) {
+                    case SUNDAY -> desiredStartTime = 11;
+                    case MONDAY -> desiredStartTime = 18;
+                    case THURSDAY -> desiredStartTime = 18;
+                }
             }
-        } else {
-            LocalDateTime desiredDay = LocalDateTime.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.next(DayOfWeek.MONDAY)).plusHours(18);
-            long desiredDayOffset = LocalDateTime.now().until(desiredDay, ChronoUnit.MINUTES);
-            currentEvents.put(updateFrequency, executorService.scheduleAtFixedRate(function, desiredDayOffset, 30,TimeUnit.MINUTES));
+
+            if (dateTime.getHour() < desiredStartTime && dateTime.getDayOfWeek() != dayOfWeek) {
+                LocalDate desiredDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.next(dayOfWeek));
+                LocalDateTime desiredDay = desiredDate.atStartOfDay().with(temporalAdjuster);
+                long desiredMinuteOffset = LocalDateTime.now().until(desiredDay, ChronoUnit.MINUTES);
+                LogManager.log("Score added in " + desiredMinuteOffset + " minutes");
+                currentEvents.put(updateFrequency, executorService.scheduleAtFixedRate(function, desiredMinuteOffset, periodCooldown,TimeUnit.MINUTES));
+            } else {
+                int intialDelay = random.nextInt(1,7);
+                currentEvents.put(updateFrequency, executorService.scheduleAtFixedRate(function, intialDelay, periodCooldown,TimeUnit.MINUTES));
+                LogManager.log("Score added in " + intialDelay + " minutes instantly");
+            }
+        } catch (Exception e) {
+            LogManager.error("Failed to update event " + updateFrequency.name() + " ", e.getMessage());
         }
+    }
+
+    public void update(@Nonnull Runnable function, UpdateFrequency updateFrequency, LocalDateTime dateTime,TemporalAdjuster temporalAdjuster, int periodCooldown) {
+        DayOfWeek currentDayOfWeek = dateTime.getDayOfWeek();
+        update(function, updateFrequency, dateTime, currentDayOfWeek, temporalAdjuster, periodCooldown);
     }
 }
