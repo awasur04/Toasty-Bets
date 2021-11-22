@@ -16,7 +16,7 @@ public class User {
     private String discordName;
 
     @Column(nullable = false)
-    private float toastyCoins;
+    private int toastyCoins;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -38,7 +38,7 @@ public class User {
         return permissionLevel;
     }
 
-    public float getToastyCoins() {
+    public int getToastyCoins() {
         return toastyCoins;
     }
 
@@ -62,7 +62,7 @@ public class User {
         this.discordName = discordName;
     }
 
-    public void setToastyCoins(float toastyCoins) {
+    public void setToastyCoins(int toastyCoins) {
         this.toastyCoins = toastyCoins;
     }
 }
