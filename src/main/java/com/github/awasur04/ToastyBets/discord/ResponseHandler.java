@@ -78,6 +78,8 @@ public class ResponseHandler {
         put("TB", "<:TB:902972770349117510>");
         put("TEN", "<:TEN:902972770177134652>");
         put("WAS", "<:WAS:902972770294595685>");
+        put("MONEY", "<:money_with_wings:>");
+        put("LOCK", "<:lock:>");
     }};
 
     public void sendWeeklySchedule(User user) {
@@ -115,6 +117,7 @@ public class ResponseHandler {
 
     public void payoutMessage(User user, int weekNumber) {
         try {
+            this.jda = discordService.getJda();
             List<Bet> currentUserBets = gameManager.getCurrentWeekBets(user);
             Message cachedUserMessage = cachedBetMessage.get(user.getDiscordId());
             net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(user.getDiscordId()).complete();
@@ -161,10 +164,10 @@ public class ResponseHandler {
             EmbedBuilder eb = new EmbedBuilder();
             eb.setTitle("Welcome to Toasty Bets NFL Betting Bot");
             eb.addField("","Every wednesday you will be sent a new weekly schedule", false);
-            eb.addField("","This schedule will contain the teams and current betting rate", false);
+            eb.addField("","This schedule will update and contain the teams with current betting rate", false);
             eb.addField("","Once you place a bet at a certain rate that bet is locked in (NO CANCELLING)", false);
-            eb.addField("", "Bets must be locked in 1 hour before event start", false);
-            eb.addField("","Bets will be paid out within 1 hour of the game end", false);
+            eb.addField("", "Bets must be locked in ~1 hour before event start", false);
+            eb.addField("","Bets will be paid out within ~1 hour of the game end", false);
             eb.addField("","You start with 1,000 Toasty Coins, and will receive 250 Toasty Coins each week", false);
             eb.addField("", "Total Payout = Betting Odds * Bet Amount", false);
             eb.setFooter("Comments, questions, or ideas please message me @cool#5783");
@@ -182,12 +185,15 @@ public class ResponseHandler {
             for (Bet bet : currentBetList) {
                 Team currentTeam = TeamList.teamList.get(bet.getTeamId());
                 Game currentGame = gameManager.getGame(currentTeam);
-                if (bet.getBetStatus() == BetStatus.LOST) {
-                    eb.addField(currentGame.toString(), "Potential Payout: " + bet.getPayout() + ", Status: LOSS", false);
+
+                int betPayout = (int)Math.ceil(bet.getPayout());
+
+                if (bet.getBetStatus() == BetStatus.LOSS) {
+                    eb.addField(currentGame.toString(), "Team: " + currentTeam.getName() + ", Potential Payout: " + betPayout + ", Status: LOSS", false);
                 } else if (bet.getBetStatus() == BetStatus.WON) {
-                    eb.addField(currentGame.toString(), "Potential Payout: " + bet.getPayout() + ", Status: WON", false);
+                    eb.addField(currentGame.toString(), "Team: " + currentTeam.getName() + ", Potential Payout: " + betPayout + ", Status: WON", false);
                 } else {
-                    eb.addField(currentGame.toString(), "Potential Payout: " + bet.getPayout() + ", Status: TBD", false);
+                    eb.addField(currentGame.toString(), "Team: " + currentTeam.getName() + ", Potential Payout: " + betPayout + ", Status: TBD", false);
                 }
             }
             eb.setFooter("For issues, please message me @cool#5783");
@@ -231,9 +237,12 @@ public class ResponseHandler {
                 String gameDate = DateFormat.formatDate(currentGame.getGameTime().withZoneSameInstant(ZoneId.of(userZoneId)).toLocalDateTime());
                 if (currentGame.getGameStatus() == GameStatus.COMPLETED) {
                     String gameScore = team1.getScore() + " - " + team2.getScore();
-                    eb.addField(title, "Date: " + gameDate + "\nFinal Score: " + gameScore, false);
+                    eb.addField(title, "Date: " + gameDate + "\n" + emojiValues.get("LOCK") + "Final Score: " + gameScore, false);
+                } else if (currentGame.getGameStatus() == GameStatus.IN_PROGRESS) {
+                    String gameScore = team1.getScore() + " - " + team2.getScore();
+                    eb.addField(title, "Date: " + gameDate + "\n" + emojiValues.get("LOCK") + "Score: " + gameScore, false);
                 } else {
-                    eb.addField(title, "Date: " + gameDate + "\nOdds: " + team1.getOdds() + " VS Odds: " + team2.getOdds(), false);
+                    eb.addField(title, "Date: " + gameDate + "\n" + emojiValues.get("MONEY") + "Odds: " + team1.getOdds() + " VS Odds: " + team2.getOdds(), false);
                 }
             }
             eb.setFooter("/bet <Team Abbreviation> <Amount>");
