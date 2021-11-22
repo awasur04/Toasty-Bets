@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Component
 public class DatabaseService {
@@ -22,8 +23,6 @@ public class DatabaseService {
 
     @Value("#{new Integer('${user.default.toastycoin.starting}')}")
     private int startingBalance;
-    @Value("#{new Integer('${user.default.toastycoin.pay}')}")
-    private int weeklyPay;
     @Value("${user.default.timezone}")
     private String startingTimezone;
 
@@ -123,5 +122,17 @@ public class DatabaseService {
             LogManager.error("Failed to find current week bets ", e.getMessage());
             return null;
         }
+    }
+
+    public void updateAllUser(List<User> entities) {
+        try {
+            userRepository.saveAll(entities);
+        }catch (Exception e) {
+            LogManager.error("Failed to update all users ", e.getMessage());
+        }
+    }
+
+    public Set<String> getActiveBetUserIds(int weekNumber) {
+       return betRepository.findActiveBetUserIds(weekNumber) ;
     }
 }
