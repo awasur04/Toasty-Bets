@@ -15,10 +15,12 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.PrivateChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.awt.Color;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public class ResponseHandler {
     private JDA jda;
     private HashMap<String, Message> cachedScheduleMessages;
     private HashMap<String, Message> cachedBetMessage;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public static HashMap<String, String> emojiValues = new HashMap<String, String>() {{
         put("ARI", "<:ARI:902972769623490631>");
@@ -78,8 +81,8 @@ public class ResponseHandler {
         put("TB", "<:TB:902972770349117510>");
         put("TEN", "<:TEN:902972770177134652>");
         put("WAS", "<:WAS:902972770294595685>");
-        put("MONEY", "<:money_with_wings:>");
-        put("LOCK", "<:lock:>");
+        put("MONEY", ":money_with_wings:");
+        put("LOCK", ":lock:");
     }};
 
     public void sendWeeklySchedule(User user) {
@@ -150,12 +153,36 @@ public class ResponseHandler {
         }
     }
 
+    public void sendFeedback(net.dv8tion.jda.api.entities.User discordSender, String message) {
+        this.jda = discordService.getJda();
+        TextChannel feedbackChannel = jda.getTextChannelById("912597028884860950");
+        if (discordSender != null && !(discordSender.isBot() && discordSender.isSystem())) {
+            feedbackChannel.sendMessageEmbeds(feedbackMessage(discordSender.getName(), message)).queue();
+        } else {
+            feedbackChannel.sendMessageEmbeds(feedbackMessage("Unregistered User", message)).queue();
+        }
+    }
+
     public void displayGameInfo(User targetUser) {
         this.jda = discordService.getJda();
         net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(targetUser.getDiscordId()).complete();
         if (discordUser != null && !(discordUser.isBot() && discordUser.isSystem())) {
             discordUser.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessageEmbeds(helpMessage()).queue());
         }
+    }
+
+
+    public MessageEmbed feedbackMessage(String discordSenderName, String message) {
+        try {
+            LocalDateTime localDateTime = LocalDateTime.now(ZoneId.of("America/Chicago"));
+            EmbedBuilder eb = new EmbedBuilder();
+            eb.setTitle("Report from " + discordSenderName);
+            eb.addField(message, localDateTime.format(formatter), false);
+            return eb.build();
+        } catch (Exception e) {
+            LogManager.error("Cannot create feedback message", e.getMessage());
+        }
+        return null;
     }
 
 
@@ -170,7 +197,7 @@ public class ResponseHandler {
             eb.addField("","Bets will be paid out within ~1 hour of the game end", false);
             eb.addField("","You start with 1,000 Toasty Coins, and will receive 250 Toasty Coins each week", false);
             eb.addField("", "Total Payout = Betting Odds * Bet Amount", false);
-            eb.setFooter("Comments, questions, or ideas please message me @cool#5783");
+            eb.setFooter("Comments, bugs, or ideas please use /report");
             return eb.build();
         } catch (Exception e) {
             LogManager.error("Cannot create help message", e.getMessage());
@@ -196,7 +223,7 @@ public class ResponseHandler {
                     eb.addField(currentGame.toString(), "Team: " + currentTeam.getName() + ", Potential Payout: " + betPayout + ", Status: TBD", false);
                 }
             }
-            eb.setFooter("For issues, please message me @cool#5783");
+            eb.setFooter("For issues, please use /report");
             return eb.build();
         } catch (Exception e) {
             LogManager.error("Cannot create bets message", e.getMessage());
