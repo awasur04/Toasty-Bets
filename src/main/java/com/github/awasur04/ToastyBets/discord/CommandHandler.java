@@ -54,7 +54,7 @@ public class CommandHandler extends ListenerAdapter {
      * help
      * deactivate
      * dev
-     * balance(ASAP)
+     * balance
      * report(PLANNED)
      * admin(PLANNED)  reset, changeperms, setdefaultchannel, banUser, unbanuser, setgenlimits
      * give(PLANNED)
@@ -124,6 +124,14 @@ public class CommandHandler extends ListenerAdapter {
                 int currentBalance = sourceUser.getToastyCoins();
                 event.reply("Your current balance is: " + currentBalance).queue();
                 break;
+
+            case "report":
+                event.reply("Thank you for your feedback.").queue();
+                String reportMessage = event.getOption("report_description").getAsString();
+                if (reportMessage.isBlank()) {
+                    break;
+                }
+                responseHandler.sendFeedback(source, reportMessage);
         }
     }
 
