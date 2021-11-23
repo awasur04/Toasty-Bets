@@ -35,7 +35,8 @@ public class DiscordService {
                 new CommandData("dev", "Developer testing"),
                 new CommandData("help", "Show help menu"),
                 new CommandData("deactivate", "Deactivate your account (you can always activate it again using /register)"),
-                new CommandData("balance", "Display your current balance")
+                new CommandData("balance", "Display your current balance"),
+                new CommandData("report", "User to submit bugs, comments, or ideas").addOption(OptionType.STRING, "report_description", "Describe what you need to report here", true)
         );
     }
 
