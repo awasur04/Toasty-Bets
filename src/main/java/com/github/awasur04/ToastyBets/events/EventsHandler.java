@@ -3,10 +3,9 @@ package com.github.awasur04.ToastyBets.events;
 import com.github.awasur04.ToastyBets.discord.DiscordService;
 import com.github.awasur04.ToastyBets.discord.ResponseHandler;
 import com.github.awasur04.ToastyBets.game.GameManager;
-import com.github.awasur04.ToastyBets.models.Game;
-import com.github.awasur04.ToastyBets.models.enums.UpdateFrequency;
 import com.github.awasur04.ToastyBets.update.UpdateGames;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
+import org.apache.juli.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -30,6 +29,7 @@ public class EventsHandler {
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationStart() {
         try {
+            LogManager.initialize();
             LogManager.log("Program Starting");
             updateGames.updateSchedule();
             updateGames.updateOdds();
