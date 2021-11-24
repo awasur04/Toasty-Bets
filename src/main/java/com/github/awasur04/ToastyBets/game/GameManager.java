@@ -127,6 +127,7 @@ public class GameManager {
                         currentGame.setGameStatus(GameStatus.COMPLETED);
                         payoutCompletedGame(matchId);
                         removeCompletedLosers(matchId);
+                        weekSchedule.remove(matchId);
                     }
                     break;
             }
@@ -134,6 +135,10 @@ public class GameManager {
             LogManager.error("Failed to update game scores", e.getMessage());
         }
 
+    }
+
+    public void clearWeeklyGames() {
+        this.weekSchedule = new HashMap<>();
     }
 
     public void updateTeamOdds(String teamName, float odds) {
@@ -250,6 +255,7 @@ public class GameManager {
         List<User> activeUserList = databaseService.findActiveUsers();
         for (User user : activeUserList) {
             int newBalance = (int)Math.ceil(user.getToastyCoins() + weeklyPay);
+            user.setToastyCoins(newBalance);
         }
         databaseService.updateAllUser(activeUserList);
     }
