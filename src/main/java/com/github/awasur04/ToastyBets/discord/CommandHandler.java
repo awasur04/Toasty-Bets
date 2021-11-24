@@ -55,7 +55,7 @@ public class CommandHandler extends ListenerAdapter {
      * deactivate
      * dev
      * balance
-     * report(PLANNED)
+     * report
      * admin(PLANNED)  reset, changeperms, setdefaultchannel, banUser, unbanuser, setgenlimits
      * give(PLANNED)
      * generate(PLANNED)
@@ -132,6 +132,15 @@ public class CommandHandler extends ListenerAdapter {
                     break;
                 }
                 responseHandler.sendFeedback(source, reportMessage);
+
+            case "betlist":
+                if (permissionCheck(sourceUser, PermissionLevel.DEV)) {
+                    event.reply("Here are your current bets").queue();
+                    responseHandler.payoutMessage(sourceUser, gameManager.getWeekNumber());
+                } else {
+                    event.reply("Sorry you do not have access to that command.").queue();
+                }
+                break;
         }
     }
 
