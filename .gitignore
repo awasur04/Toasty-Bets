@@ -9,3 +9,4 @@ pom.xml.next
 dependency-reduced-pom.xml
 .mvn/wrapper/maven-wrapper.jar
 *.properties
+*.bat
