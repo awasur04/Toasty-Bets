@@ -8,20 +8,21 @@ import java.time.LocalDateTime;
 
 public final class LogManager {
     static File logFile;
+    static File folder;
     static BufferedWriter buffWriter;
 
-    public LogManager() {}
+    public static void initialize() {
+        LocalDateTime currentDateAndTime = LocalDateTime.now();
+        String logFileName = "logs-" + currentDateAndTime.getYear() + "-" + currentDateAndTime.getMonthValue() + "-" + currentDateAndTime.getDayOfMonth() + ".txt";
+
+        folder = new File("logs\\");
+        folder.mkdir();
+        logFile = new File(folder, logFileName);
+    }
 
     public static void logMessage(String message) {
         try {
             LocalDateTime currentDateAndTime = LocalDateTime.now();
-            String logFileName = "logs-" + currentDateAndTime.getYear() + "-" + currentDateAndTime.getMonthValue() + "-" + currentDateAndTime.getDayOfMonth() + ".txt";
-
-            logFile = new File("logs\\" + logFileName);
-            if (logFile.getParentFile().mkdir()) {
-                logFile.createNewFile();
-            }
-
             buffWriter = new BufferedWriter(new FileWriter(logFile, true));
             if (!message.isBlank()) {
                 String newMessage = "\n[" + currentDateAndTime.getYear() + "-" + currentDateAndTime.getMonthValue() + "-" + currentDateAndTime.getDayOfMonth() +
