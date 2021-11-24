@@ -122,15 +122,16 @@ public class ResponseHandler {
         try {
             this.jda = discordService.getJda();
             List<Bet> currentUserBets = gameManager.getCurrentWeekBets(user);
-            Message cachedUserMessage = cachedBetMessage.get(user.getDiscordId());
-            net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(user.getDiscordId()).complete();
+            String discordId = user.getDiscordId();
+            Message cachedUserMessage = cachedBetMessage.get(discordId);
+            net.dv8tion.jda.api.entities.User discordUser = jda.retrieveUserById(discordId).complete();
             if (cachedUserMessage != null) {
-                cachedUserMessage.editMessageEmbeds(betMessage(currentUserBets, weekNumber)).queue();
-            } else {
-                PrivateChannel pm = discordUser.openPrivateChannel().complete();
-                Message sentMessage = pm.sendMessageEmbeds(betMessage(currentUserBets, weekNumber)).complete();
-                cachedBetMessage.put(user.getDiscordId(), sentMessage);
+                cachedUserMessage.delete().queue();
+                cachedBetMessage.remove(discordId);
             }
+            PrivateChannel pm = discordUser.openPrivateChannel().complete();
+            Message sentMessage = pm.sendMessageEmbeds(betMessage(currentUserBets, weekNumber)).complete();
+            cachedBetMessage.put(discordId, sentMessage);
         } catch (Exception e) {
             LogManager.error("Cannot update/send payout message", e.getMessage());
         }
