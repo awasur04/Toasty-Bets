@@ -21,7 +21,7 @@ public class DiscordService {
 
     public void startBot() throws LoginException {
         this.jda = JDABuilder.createDefault(this.discordToken)
-                .setActivity(Activity.playing("Use /register to help testing"))
+                .setActivity(Activity.playing("Use /register to join"))
                 .addEventListeners(new CommandHandler())
                 .build();
 
@@ -36,7 +36,8 @@ public class DiscordService {
                 new CommandData("help", "Show help menu"),
                 new CommandData("deactivate", "Deactivate your account (you can always activate it again using /register)"),
                 new CommandData("balance", "Display your current balance"),
-                new CommandData("report", "User to submit bugs, comments, or ideas").addOption(OptionType.STRING, "report_description", "Describe what you need to report here", true)
+                new CommandData("report", "User to submit bugs, comments, or ideas").addOption(OptionType.STRING, "report_description", "Describe what you need to report here", true),
+                new CommandData("betlist", "View your current bets")
         );
     }
 
