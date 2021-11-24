@@ -52,12 +52,12 @@ public class ScheduledEventsManager {
 
         switch(frequency){
             case WEEKLY:
-                //Run once at 2 on wednesday night
-                LocalDate wednesdayDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY));
+                //Run once at midnight central on wednesday night
+                LocalDate wednesdayDate = LocalDate.now( ZoneId.of("America/Chicago") ).with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY));
                 LocalDateTime wednesday = wednesdayDate.atStartOfDay();
-                long wednesdayOffset = LocalDateTime.now().until(wednesday, ChronoUnit.HOURS);
+                long wednesdayOffset = LocalDateTime.now(ZoneId.of("America/Chicago")).until(wednesday, ChronoUnit.MINUTES);
                 LogManager.log("New weekly event added in " + wednesdayOffset + " hours");
-                currentEvents.put(frequency, executorService.schedule(function, wednesdayOffset, TimeUnit.HOURS));
+                currentEvents.put(frequency, executorService.schedule(function, wednesdayOffset, TimeUnit.MINUTES));
                 break;
 
             case ODDS:
@@ -67,15 +67,16 @@ public class ScheduledEventsManager {
 
             case GAMECHECK:
                 //Start at 7am and update every 15 minutes
-                update(function, frequency, currentDate,new NextUpdate(), 15);
+                DayOfWeek earliestDate = getOddsUpdateDayOfWeek();
+                update(function, frequency, currentDate, earliestDate, new NextUpdate(), 15);
                 break;
 
             case NIGHTLYRESET:
                 //Run once every night at midnight
                 LocalDateTime resetTime = LocalDateTime.now( ZoneId.of("America/New_York") ).with(new NextMidnight());
-                long resetOffset = LocalDateTime.now().until(resetTime, ChronoUnit.MINUTES);
+                long resetOffset = LocalDateTime.now(ZoneId.of("America/New_York")).until(resetTime, ChronoUnit.MINUTES);
 
-                if (resetOffset < 0) {
+                if (resetOffset <= 0) {
                     resetOffset = resetOffset + 1440;
                 }
 
@@ -168,8 +169,7 @@ public class ScheduledEventsManager {
                     case THURSDAY -> desiredStartTime = 18;
                 }
             }
-
-            if (dateTime.getHour() < desiredStartTime && dateTime.getDayOfWeek() != dayOfWeek) {
+            if (dateTime.getHour() <= desiredStartTime && dateTime.getDayOfWeek() != dayOfWeek || dateTime.getDayOfWeek() != dayOfWeek) {
                 LocalDate desiredDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.next(dayOfWeek));
                 LocalDateTime desiredDay = desiredDate.atStartOfDay().with(temporalAdjuster);
                 long desiredMinuteOffset = LocalDateTime.now().until(desiredDay, ChronoUnit.MINUTES);
@@ -188,5 +188,25 @@ public class ScheduledEventsManager {
     public void update(@Nonnull Runnable function, UpdateFrequency updateFrequency, LocalDateTime dateTime,TemporalAdjuster temporalAdjuster, int periodCooldown) {
         DayOfWeek currentDayOfWeek = dateTime.getDayOfWeek();
         update(function, updateFrequency, dateTime, currentDayOfWeek, temporalAdjuster, periodCooldown);
+    }
+
+    public DayOfWeek getOddsUpdateDayOfWeek() {
+        LocalDateTime sundayDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).atStartOfDay();
+        LocalDateTime mondayDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)).atStartOfDay();
+        LocalDateTime thursdayDate = LocalDate.now( ZoneId.of("America/New_York") ).with(TemporalAdjusters.nextOrSame(DayOfWeek.THURSDAY)).atStartOfDay();
+
+        if (sundayDate.isBefore(mondayDate)) {
+            if (sundayDate.isBefore(thursdayDate)) {
+                return DayOfWeek.SUNDAY;
+            } else {
+                return DayOfWeek.THURSDAY;
+            }
+        } else {
+            if (mondayDate.isBefore(thursdayDate)) {
+                return DayOfWeek.MONDAY;
+            } else {
+                return DayOfWeek.THURSDAY;
+            }
+        }
     }
 }
