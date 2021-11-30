@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public final class LogManager {
     static File logFile;
@@ -12,17 +13,20 @@ public final class LogManager {
     static BufferedWriter buffWriter;
 
     public static void initialize() {
-        LocalDateTime currentDateAndTime = LocalDateTime.now();
+        LocalDateTime currentDateAndTime = LocalDateTime.now(ZoneId.of("America/Chicago"));
         String logFileName = "logs-" + currentDateAndTime.getYear() + "-" + currentDateAndTime.getMonthValue() + "-" + currentDateAndTime.getDayOfMonth() + ".txt";
 
         folder = new File("logs\\");
-        folder.mkdir();
+        if (!folder.exists()) {
+            folder.mkdir();
+        }
         logFile = new File(folder, logFileName);
     }
 
     public static void logMessage(String message) {
         try {
-            LocalDateTime currentDateAndTime = LocalDateTime.now();
+            initialize();
+            LocalDateTime currentDateAndTime = LocalDateTime.now(ZoneId.of("America/Chicago"));
             buffWriter = new BufferedWriter(new FileWriter(logFile, true));
             if (!message.isBlank()) {
                 String newMessage = "\n[" + currentDateAndTime.getYear() + "-" + currentDateAndTime.getMonthValue() + "-" + currentDateAndTime.getDayOfMonth() +
