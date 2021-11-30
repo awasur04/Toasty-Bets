@@ -38,7 +38,6 @@ public class EventsHandler {
             responseHandler.resetCachedList();
             discordService.startBot();
             updateGames.updateScore();
-            gameManager.sendAllUsersBets();
         }catch (Exception e) {
             LogManager.error("Main Program: ", e.getMessage());
         }
@@ -57,6 +56,7 @@ public class EventsHandler {
     public void nextWeek() {
         LogManager.log("nextWeek called");
         responseHandler.resetCachedList();
+        gameManager.clearWeeklyGames();
         updateGames.updateSchedule();
         updateGames.updateOdds();
         scheduledEventsManager.weeklyUpdateReset();
