@@ -114,22 +114,26 @@ public class GameManager {
 
         try {
             Game currentGame = weekSchedule.get(matchId);
-            currentGame.getTeam(1).setScore(team1Score);
-            currentGame.getTeam(2).setScore(team2Score);
+            if (currentGame != null) {
+                currentGame.getTeam(1).setScore(team1Score);
+                currentGame.getTeam(2).setScore(team2Score);
 
-            switch(matchState) {
-                case "STATUS_SCHEDULED":
-                    currentGame.setGameStatus(GameStatus.SCHEDULED);
-                    break;
-                case "STATUS_IN_PROGRESS": currentGame.setGameStatus(GameStatus.IN_PROGRESS); break;
-                case "STATUS_FINAL":
-                    if (currentGame.getGameStatus() != GameStatus.COMPLETED) {
-                        currentGame.setGameStatus(GameStatus.COMPLETED);
-                        payoutCompletedGame(matchId);
-                        removeCompletedLosers(matchId);
-                        weekSchedule.remove(matchId);
-                    }
-                    break;
+                switch(matchState) {
+                    case "STATUS_SCHEDULED":
+                        currentGame.setGameStatus(GameStatus.SCHEDULED);
+                        break;
+                    case "STATUS_IN_PROGRESS": currentGame.setGameStatus(GameStatus.IN_PROGRESS); break;
+                    case "STATUS_FINAL":
+                        if (currentGame.getGameStatus() != GameStatus.COMPLETED) {
+                            currentGame.setGameStatus(GameStatus.COMPLETED);
+                            payoutCompletedGame(matchId);
+                            removeCompletedLosers(matchId);
+                            //weekSchedule.remove(matchId);
+                        }
+                        break;
+                }
+            }else {
+                throw new RuntimeException("updateGameScore returned a null game");
             }
         }catch(Exception e) {
             LogManager.error("Failed to update game scores", e.getMessage());
