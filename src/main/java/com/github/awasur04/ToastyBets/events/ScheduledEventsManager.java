@@ -6,7 +6,6 @@ import com.github.awasur04.ToastyBets.events.temporaladjusters.NextMidnight;
 import com.github.awasur04.ToastyBets.events.temporaladjusters.NextUpdate;
 import com.github.awasur04.ToastyBets.models.enums.UpdateFrequency;
 import com.github.awasur04.ToastyBets.utilities.LogManager;
-import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +18,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -56,6 +54,11 @@ public class ScheduledEventsManager {
                 LocalDate wednesdayDate = LocalDate.now( ZoneId.of("America/Chicago") ).with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY));
                 LocalDateTime wednesday = wednesdayDate.atStartOfDay();
                 long wednesdayOffset = LocalDateTime.now(ZoneId.of("America/Chicago")).until(wednesday, ChronoUnit.MINUTES);
+
+                if (wednesdayOffset <= 24) {
+                    wednesdayOffset = wednesdayOffset + 10080;
+                }
+
                 LogManager.log("New weekly event added in " + wednesdayOffset + " hours");
                 currentEvents.put(frequency, executorService.schedule(function, wednesdayOffset, TimeUnit.MINUTES));
                 break;
